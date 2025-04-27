@@ -1,4 +1,4 @@
-import { greedyCover, localSearch } from "./solver";
+import { greedyCover, localSearch, simulatedAnnealing } from "./solver";
 
 export interface Params {
   m: number; n: number; k: number; j: number; s: number;
@@ -20,6 +20,7 @@ const randSample = (m: number, n: number, seed = Date.now()) => {
   return a.slice(0, n);
 };
 
+
 const label = (x: number) => {
   let s = ""; x--;
   do { s = String.fromCharCode(65 + (x % 26)) + s; x = Math.floor(x / 26) - 1; }
@@ -34,8 +35,30 @@ export function solve(p: Params): Result {
   const pool = randSample(m, n, seed);
   const t0 = Date.now(), deadline = t0 + timeoutMs;
 
+  // 先用贪心算法获得初始解
   let groups = greedyCover(n, k, j, s, minSGroups, pool, deadline);
+  
+  // 使用局部搜索优化 - 修正参数数量
   groups = localSearch(groups, pool, n, j, s, minSGroups, deadline);
+  
+  // 对于小规模问题使用模拟退火进一步优化
+  const isSmallProblem = n <= 9 && k <= 7;
+  const remainingTime = deadline - Date.now();
+  
+  if (isSmallProblem && remainingTime > 5000) {
+    try {
+      // 确保函数名称匹配
+      const saGroups = simulatedAnnealing(groups, pool, n, j, s, k, minSGroups, deadline);
+      
+      // 只有当模拟退火得到更好的结果时才使用
+      if (saGroups.length < groups.length) {
+        groups = saGroups;
+      }
+    } catch (e) {
+      console.error("Simulated annealing failed:", e);
+      // 失败时保持原有结果
+    }
+  }
 
   const ms = Date.now() - t0;
   if (toLabel) {

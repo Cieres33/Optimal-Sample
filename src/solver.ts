@@ -175,3 +175,142 @@ export function localSearch(
   
   return groups;
 }
+
+/* 模拟退火算法 */
+export function simulatedAnnealing(
+  initialGroups: number[][], pool: number[],
+  n: number, j: number, s: number, k: number, minSGroups: number, deadline: number
+): number[][] {
+  const jSets = [...kComb(n, j)];
+  
+  // 检查覆盖是否满足条件
+  const covered = (sol: number[][]) => {
+    const coverCounts = new Array(jSets.length).fill(0);
+    
+    for (const kg of sol) {
+      jSets.forEach((js, jIdx) => {
+        if (s === j) {
+          // 完全覆盖逻辑
+          let isSubset = true;
+          for (const idx of js) {
+            if (!kg.includes(pool[idx])) {
+              isSubset = false;
+              break;
+            }
+          }
+          if (isSubset) coverCounts[jIdx]++;
+        } else {
+          // 部分覆盖逻辑
+          let c = 0;
+          for (const idx of js) if (kg.includes(pool[idx])) c++;
+          if (c >= s) coverCounts[jIdx]++;
+        }
+      });
+    }
+    
+    return coverCounts.every(count => count >= minSGroups);
+  };
+  
+  // 生成所有可能的k组
+  const allGroups: number[][] = [];
+  for (const ks of kComb(n, k)) {
+    if (Date.now() > deadline - 5000) break; // 预留5秒
+    allGroups.push(ks.map(idx => pool[idx]));
+  }
+  
+  // 如果组合过多，则限制数量以保证性能
+  const MAX_GROUPS = 200;
+  if (allGroups.length > MAX_GROUPS) {
+    // 随机选择一部分
+    const selected = new Set<number>();
+    while (selected.size < MAX_GROUPS && selected.size < allGroups.length) {
+      selected.add(Math.floor(Math.random() * allGroups.length));
+    }
+    const limitedGroups = Array.from(selected).map(i => allGroups[i]);
+    // 确保初始解中的组也被包含
+    for (const group of initialGroups) {
+      if (!limitedGroups.some(g => arraysEqual(g, group))) {
+        limitedGroups.push(group);
+      }
+    }
+    allGroups.length = 0;
+    allGroups.push(...limitedGroups);
+  }
+  
+  // 初始解
+  let currentSolution = [...initialGroups];
+  let bestSolution = [...initialGroups];
+  
+  // 模拟退火参数
+  const initialTemp = 10.0;
+  const coolingRate = 0.95;
+  const minTemp = 0.01;
+  
+  // 开始模拟退火
+  let temp = initialTemp;
+  let iterations = 0;
+  const MAX_ITERATIONS = 1000;
+  
+  while (temp > minTemp && iterations < MAX_ITERATIONS && Date.now() < deadline - 1000) {
+    iterations++;
+    
+    // 生成新解
+    let newSolution = [...currentSolution];
+    const operation = Math.random();
+    
+    if (operation < 0.4 && newSolution.length > 0) {
+      // 替换一个组
+      const replaceIndex = Math.floor(Math.random() * newSolution.length);
+      const candidateGroups = allGroups.filter(g => 
+        !newSolution.some(s => arraysEqual(s, g)));
+      
+      if (candidateGroups.length > 0) {
+        const newGroup = candidateGroups[Math.floor(Math.random() * candidateGroups.length)];
+        newSolution[replaceIndex] = newGroup;
+      }
+    } else if (operation < 0.7 && newSolution.length > 1) {
+      // 删除一个组
+      const deleteIndex = Math.floor(Math.random() * newSolution.length);
+      newSolution.splice(deleteIndex, 1);
+    } else {
+      // 添加一个组
+      const candidateGroups = allGroups.filter(g => 
+        !newSolution.some(s => arraysEqual(s, g)));
+      
+      if (candidateGroups.length > 0) {
+        const newGroup = candidateGroups[Math.floor(Math.random() * candidateGroups.length)];
+        newSolution.push(newGroup);
+      }
+    }
+    
+    // 评估新解
+    const isCovered = covered(newSolution);
+    
+    // 如果新解满足覆盖条件并且组数更少，或者根据温度有概率接受较差解
+    if (isCovered) {
+      const deltaE = newSolution.length - currentSolution.length;
+      
+      if (deltaE < 0 || Math.random() < Math.exp(-deltaE / temp)) {
+        currentSolution = newSolution;
+        
+        // 更新最优解
+        if (newSolution.length < bestSolution.length) {
+          bestSolution = [...newSolution];
+        }
+      }
+    }
+    
+    // 降温
+    temp *= coolingRate;
+  }
+  
+  return bestSolution;
+}
+
+// 辅助函数：检查两个数组是否相等
+function arraysEqual(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort((x, y) => x - y);
+  const sortedB = [...b].sort((x, y) => x - y);
+  return sortedA.every((val, idx) => val === sortedB[idx]);
+}
