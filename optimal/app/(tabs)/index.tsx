@@ -1,74 +1,147 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { Provider as PaperProvider, Button, TextInput, Text, Card, DefaultTheme } from 'react-native-paper';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const App = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [inputs, setInputs] = useState({
+    part1: '',
+    part2: '',
+    part3: '',
+    part4: '',
+    part5: ''
+  });
+  const customTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: '#2196F3',      // 聚焦时边框颜色
+      text: '#37474F',         // 输入文字颜色
+      placeholder: '#BDBDBD',  // 占位符颜色
+      background: '#FFFFFF',   // 输入框背景色
+      surface: '#F5F5F5'       // 未聚焦边框颜色（需要特殊处理）
+    },
+  };
 
-export default function HomeScreen() {
+  const toggleMode = () => {
+    //TODO  更改模式
+    setIsVisible(!isVisible);}
+
+  const handleInputChange = (text: string, part: string) => {
+    setInputs(prev => ({
+      ...prev,
+      [part]: text
+    }));
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <PaperProvider theme={customTheme}>
+      <View style={styles.container}>
+        {/* 显示/隐藏控制按钮 */}
+        <Button 
+          mode="contained" 
+          onPress={toggleMode}
+          style={styles.button}
+        >
+          {isVisible ? 'custom' : 'random'}
+        </Button>
+
+        {/* 输入框组 */}
+        {isVisible && (
+          <View style={styles.inputGroup}>
+              <TextInput
+                mode="outlined"
+                style={styles.shortInput}
+                placeholder="m"
+                maxLength={3}
+                value={inputs.part1}
+                onChangeText={(t: string) => handleInputChange(t, 'part1')}
+              />
+              <Text style={styles.dash}>-</Text>
+              <TextInput
+                mode="outlined"
+                style={styles.shortInput}
+                placeholder="n"
+                maxLength={3}
+                value={inputs.part2}
+                onChangeText={t => handleInputChange(t, 'part2')}
+              />
+              <Text style={styles.dash}>-</Text>
+              <TextInput
+                mode="outlined"
+                style={styles.shortInput}
+                placeholder="k"
+                maxLength={3}
+                value={inputs.part3}
+                onChangeText={t => handleInputChange(t, 'part3')}
+              />
+              <Text style={styles.dash}>-</Text>
+              <TextInput
+                mode="outlined"
+                style={styles.shortInput}
+                placeholder="j"
+                maxLength={4}
+                value={inputs.part4}
+                onChangeText={t => handleInputChange(t, 'part4')}
+              />
+              <Text style={styles.dash}>-</Text>
+              <TextInput
+                mode="outlined"
+                style={styles.shortInput}
+                placeholder="s"
+                maxLength={5}
+                value={inputs.part5}
+                onChangeText={t => handleInputChange(t, 'part5')}
+              />
+          </View>
+        )}
+
+        {/* execute */}
+        <Button 
+          mode="contained" 
+          style={[styles.button, styles.executeButton]}
+          onPress={() =>([])}
+        >
+          execute
+        </Button>
+      </View>
+    </PaperProvider>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    gap: 8,
+    padding: 20,
+    paddingTop: 300
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  button: {
+    marginBottom: 20,
+    width: 200
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  executeButton: {
+    backgroundColor: '#CCCCCC',
+    marginTop: 30
   },
+  inputGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', // 允许换行
+    justifyContent: 'center',
+    padding: 10
+  },
+  shortInput: {
+    width: 40,
+    height: 40,
+    textAlignVertical: 'center', // 垂直居中（Android）
+    paddingVertical: 0           // 清除默认垂直 padding
+  },
+  dash: {
+    fontSize: 20,
+    lineHeight: 40,
+    marginHorizontal: 5
+  }
 });
+
+export default App;
