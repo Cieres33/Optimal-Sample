@@ -1,4 +1,3 @@
-// 运行:  npx ts-node runner.ts
 import { solve } from "./src/index";
 import { C, kComb } from "./src/comb";
 
