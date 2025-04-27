@@ -2,6 +2,7 @@ import { greedyCover, localSearch } from "./solver";
 
 export interface Params {
   m: number; n: number; k: number; j: number; s: number;
+  minSGroups?: number; // 新增：最少需要覆盖的s样本组数量
   seed?: number; toLabel?: boolean; timeoutMs?: number;
 }
 export interface Result {
@@ -27,14 +28,14 @@ const label = (x: number) => {
 };
 
 export function solve(p: Params): Result {
-  const { m, n, k, j, s, seed, toLabel=false, timeoutMs=60_000 } = p;
+  const { m, n, k, j, s, minSGroups=1, seed, toLabel=false, timeoutMs=60_000 } = p;
   if (n > 25 || k > 7) throw Error("beyond spec");
 
   const pool = randSample(m, n, seed);
   const t0 = Date.now(), deadline = t0 + timeoutMs;
 
-  let groups = greedyCover(n, k, j, s, pool, deadline);
-  groups = localSearch(groups, pool, n, j, s, deadline);
+  let groups = greedyCover(n, k, j, s, minSGroups, pool, deadline);
+  groups = localSearch(groups, pool, n, j, s, minSGroups, deadline);
 
   const ms = Date.now() - t0;
   if (toLabel) {
