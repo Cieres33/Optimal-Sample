@@ -177,13 +177,15 @@ export function localSearch(
 }
 
 /* 模拟退火算法 */
+/* 改进的模拟退火算法 */
 export function simulatedAnnealing(
   initialGroups: number[][], pool: number[],
-  n: number, j: number, s: number, k: number, minSGroups: number, deadline: number
+  n: number, j: number, s: number, k: number, minSGroups: number, 
+  deadline: number
 ): number[][] {
   const jSets = [...kComb(n, j)];
   
-  // 检查覆盖是否满足条件
+  // 检查覆盖函数保持不变
   const covered = (sol: number[][]) => {
     const coverCounts = new Array(jSets.length).fill(0);
     
@@ -214,42 +216,23 @@ export function simulatedAnnealing(
   // 生成所有可能的k组
   const allGroups: number[][] = [];
   for (const ks of kComb(n, k)) {
-    if (Date.now() > deadline - 5000) break; // 预留5秒
+    if (Date.now() > deadline - 3000) break; // 预留3秒
     allGroups.push(ks.map(idx => pool[idx]));
-  }
-  
-  // 如果组合过多，则限制数量以保证性能
-  const MAX_GROUPS = 200;
-  if (allGroups.length > MAX_GROUPS) {
-    // 随机选择一部分
-    const selected = new Set<number>();
-    while (selected.size < MAX_GROUPS && selected.size < allGroups.length) {
-      selected.add(Math.floor(Math.random() * allGroups.length));
-    }
-    const limitedGroups = Array.from(selected).map(i => allGroups[i]);
-    // 确保初始解中的组也被包含
-    for (const group of initialGroups) {
-      if (!limitedGroups.some(g => arraysEqual(g, group))) {
-        limitedGroups.push(group);
-      }
-    }
-    allGroups.length = 0;
-    allGroups.push(...limitedGroups);
   }
   
   // 初始解
   let currentSolution = [...initialGroups];
   let bestSolution = [...initialGroups];
   
-  // 模拟退火参数
-  const initialTemp = 10.0;
-  const coolingRate = 0.95;
+  // 模拟退火参数 - 根据问题规模调整
+  const initialTemp = 15.0;
+  const coolingRate = 0.96;
   const minTemp = 0.01;
   
   // 开始模拟退火
   let temp = initialTemp;
   let iterations = 0;
-  const MAX_ITERATIONS = 1000;
+  const MAX_ITERATIONS = 1500;
   
   while (temp > minTemp && iterations < MAX_ITERATIONS && Date.now() < deadline - 1000) {
     iterations++;
