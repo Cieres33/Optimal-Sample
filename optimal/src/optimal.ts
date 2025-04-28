@@ -22,10 +22,7 @@ const randSample = (m: number, n: number, seed = Date.now()) => {
 
 
 const label = (x: number) => {
-  let s = ""; x--;
-  do { s = String.fromCharCode(65 + (x % 26)) + s; x = Math.floor(x / 26) - 1; }
-  while (x >= 0);
-  return s;
+  return x < 10 ? `0${x}` : `${x}`;
 };
 
 export function solve(p: Params): Result {
