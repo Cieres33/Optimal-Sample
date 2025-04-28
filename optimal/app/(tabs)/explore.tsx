@@ -1,6 +1,6 @@
 // optimal/app/(tabs)/explore.tsx (部分修改)
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, View, ScrollView, SafeAreaView } from 'react-native';
+import { StyleSheet, FlatList, View, ScrollView, SafeAreaView, Alert } from 'react-native';
 import { Card, List, Divider, Button, ActivityIndicator, Text } from 'react-native-paper';
 // 删除通用Model导入
 // import { Model } from '@nozbe/watermelondb';
@@ -13,7 +13,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 // 导入具体的模型类而不是通用Model
 import Record from '../db/models/Record';
 import Result from '../db/models/Result';
-import { getAllRecords, getRecordDetail } from '../services/dbService';
+import { getAllRecords, getRecordDetail, deleteRecord } from '../services/dbService';
 
 // 定义接口类型
 interface DetailData {
@@ -67,6 +67,31 @@ export default function ExploreScreen() {
       console.error("获取记录详情失败:", e);
     } finally {
       setDetailLoading(false);
+    }
+  };
+  const handleDelete = async () => {
+    if (!selectedRecord) return;
+  
+    try {
+      // 确认对话框
+      Alert.alert(
+        "确认删除",
+        "确定要删除这条记录吗？",
+        [
+          { text: "取消", style: "cancel" },
+          { 
+            text: "确定", 
+            onPress: async () => {
+              await deleteRecord(selectedRecord.id);
+              handleBack(); // 返回列表
+              loadRecords(); // 刷新列表
+            }
+          }
+        ]
+      );
+    } catch (e) {
+      console.error("删除记录失败:", e);
+      Alert.alert("错误", "删除记录失败");
     }
   };
 
@@ -158,6 +183,17 @@ export default function ExploreScreen() {
           >
             Record Detail
           </ThemedText>
+                  {/* 删除按钮 */}
+        <Button
+          mode="contained"
+          icon="delete"
+          onPress={handleDelete}
+          style={styles.headerButton}
+          buttonColor="#ff4444"
+          textColor="#fff"
+        >
+          Delete
+        </Button>
         </ThemedView>
         
         {detailLoading ? (
@@ -247,9 +283,27 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 20,
   },
+  detailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  headerButton: {
+    minWidth: 90,
+    marginHorizontal: 5,
+  },
+  detailTitle: {
+    fontSize: 20,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 10,
+  },
   detailCard: {
     width: '100%',
     marginBottom: 20,
+    marginHorizontal: 0,
   },
   loader: {
     marginVertical: 30,

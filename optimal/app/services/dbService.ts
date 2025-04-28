@@ -73,6 +73,36 @@ export async function storeResult(
 
   return recordId;
 }
+export async function deleteRecord(recordId: string): Promise<void> {
+  try {
+    const database = getDatabase();
+    const recordsCollection = database.collections.get<Record>('records');
+    const resultsCollection = database.collections.get<Result>('results');
+
+    // 获取要删除的记录
+    const record = await recordsCollection.find(recordId);
+
+    // 级联删除关联结果
+    const relatedResults = await resultsCollection.query(
+      Q.where('record_id', recordId)
+    ).fetch();
+
+    await database.write(async () => {
+      // 使用Promise.all并行删除关联结果
+      await Promise.all(
+        relatedResults.map(result => result.destroyPermanently())
+      );
+      
+      // 删除主记录
+      await record.destroyPermanently();
+    });
+
+    console.log('记录删除成功');
+  } catch (error) {
+    console.error('删除记录时出错:', error);
+    throw new Error('删除记录失败');
+  }
+}
 // 清除所有记录 (慎用)（不使用 .action）
 export async function clearAllRecords() {
   const recordsCollection = database.collections.get<Record>('records');
@@ -89,4 +119,10 @@ export async function clearAllRecords() {
   for (const record of records) {
     await record.destroyPermanently();
   }
+}
+function getDatabase() {
+  if (!database) {
+    throw new Error('数据库未初始化');
+  }
+  return database;
 }
