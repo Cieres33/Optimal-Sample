@@ -36,31 +36,32 @@ export function solve(p: Params): Result {
   const t0 = Date.now(), deadline = t0 + timeoutMs;
 
   // 先用贪心算法获得初始解
-  const greedyGroups = greedyCover(n, k, j, s, minSGroups, pool, deadline);
+  let bestGroups = greedyCover(n, k, j, s, minSGroups, pool, deadline);
   
-  // 使用局部搜索优化
-  const localGroups = localSearch(greedyGroups, pool, n, j, s, minSGroups, deadline);
-  
-  // 保存最佳结果
-  let bestGroups = [...localGroups];
-  
-  // 对于小规模问题，尝试模拟退火改进
-  if (n <= 9 && k <= 7) {
-    const remainingTime = deadline - Date.now();
+  // 只对中小规模问题使用局部搜索
+  if (n <= 15) {
+    // 使用局部搜索优化
+    const localGroups = localSearch(bestGroups, pool, n, j, s, minSGroups, deadline);
+    bestGroups = localGroups;
     
-    // 确保有足够时间运行模拟退火
-    if (remainingTime > 10000) {
-      try {
-        const saGroups = simulatedAnnealing(
-          localGroups, pool, n, j, s, k, minSGroups, deadline
-        );
-        
-        // 只有当模拟退火找到更好解时才采用
-        if (saGroups.length < bestGroups.length) {
-          bestGroups = saGroups;
+    // 对于小规模问题，尝试模拟退火改进
+    if (n <= 9 && k <= 7) {
+      const remainingTime = deadline - Date.now();
+      
+      // 确保有足够时间运行模拟退火
+      if (remainingTime > 10000) {
+        try {
+          const saGroups = simulatedAnnealing(
+            bestGroups, pool, n, j, s, k, minSGroups, deadline
+          );
+          
+          // 只有当模拟退火找到更好解时才采用
+          if (saGroups.length < bestGroups.length) {
+            bestGroups = saGroups;
+          }
+        } catch (e) {
+          console.error("Simulated annealing failed:", e);
         }
-      } catch (e) {
-        console.error("Simulated annealing failed:", e);
       }
     }
   }
