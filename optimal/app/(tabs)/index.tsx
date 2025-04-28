@@ -1,257 +1,256 @@
-// optimal/app/(tabs)/index.tsx
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, FlatList } from 'react-native';
 import {
-  Provider as PaperProvider,
-  Button,
-  TextInput,
-  Text,
-  Card,
-  DefaultTheme,
-  List,
-  SegmentedButtons
+    Button,
+    TextInput,
+    Text,
+    Card,
+    DefaultTheme,
+    List,
+    SegmentedButtons,
+    Banner,
+    useTheme,
+    Portal,
+    Modal,
 } from 'react-native-paper';
 
 import {
-  runOptimalAlgorithm,
-  validateParams,
-  randomParams,
+    runOptimalAlgorithm,
+    validateParams,
+    randomParams,
 } from '../services/optimalService';
 
 import { Params, Result } from '../../src/optimal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const App = () => {
-  /* ------- UI 状态 ------- */
-  const [isCustom, setIsCustom] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const [value, setValue] = useState('random');
-  const [form, setForm] = useState({
-    m: '45',
-    n: '8',
-    k: '6',
-    j: '4',
-    s: '4',
-  });
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
-  const [result,  setResult]  = useState<Result | null>(null);
-  const toggleVisibility = () => setIsVisible(!isVisible);
-  const customTheme = {
-    ...DefaultTheme,
-    colors: {
-      ...DefaultTheme.colors,
-      primary: '#2196F3',      // 聚焦时边框颜色
-      text: '#37474F',         // 输入文字颜色
-      placeholder: '#BDBDBD',  // 占位符颜色
-      background: '#FFFFFF',   // 输入框背景色
-      surface: '#F5F5F5'       // 未聚焦边框颜色（需要特殊处理）
-    },
-  };
-  const handleInputChange = (text: string, part: string) => {
-    setForm(prev => ({
-      ...prev,
-      [part]: text
-    }));
-  };
-
-  function handleCustomMode() {
-    toggleVisibility()
-  }
-
-  function handleRandomMode() {
-    toggleVisibility()
-  }
-  const setField = (key: keyof typeof form, value: string) => {
-    if (/^\d*$/.test(value)) setForm(f => ({ ...f, [key]: value }));
-  };
-
-  /** 点击 EXECUTE */
-  const onExecute = async () => {
-    setError(null);
-    setResult(null);
-
-    /* 1. 收集 / 生成参数 ------------------------------------ */
-    let params: Params;
-    if (isCustom) {
-      params = {
-        m: parseInt(form.m, 10),
-        n: parseInt(form.n, 10),
-        k: parseInt(form.k, 10),
-        j: parseInt(form.j, 10),
-        s: parseInt(form.s, 10),
-      };
-    } else {
-      params = randomParams();
-      setForm({
-        m: params.m.toString(),
-        n: params.n.toString(),
-        k: params.k.toString(),
-        j: params.j.toString(),
-        s: params.s.toString(),
-      });
-    }
-
-    /* 2. 校验 ---------------------------------------------- */
-    const err = validateParams(params);
-    if (err) { setError(err); return; }
-
-    /* 3. 调用算法 ----------------------------------------- */
-    try {
-      setLoading(true);
-      const r = await runOptimalAlgorithm(params);
-      setResult(r);
-    } catch (e: any) {
-      setError(e.message || '执行失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  return (
-    <PaperProvider theme={customTheme}>
-      <ScrollView>
-      <View style={styles.container}>
-        {/* 显示/隐藏控制按钮 */}
-        <SegmentedButtons
-          value={value}
-          onValueChange={(newValue) => {
-            setValue(newValue); // 必须保留的value更新
-            // 这里可以添加自定义点击逻辑
-            console.log('当前选中:', newValue);
-            if(newValue === 'custom') handleCustomMode();
-            if(newValue === 'random') handleRandomMode();
-          }}
-          buttons={[
-            {
-              value: 'custom',
-              label: 'custom',
-              style: value === 'custom' ? styles.activeSegment : styles.inactiveSegment
-            },
-            {
-              value: 'random',
-              label: 'random',
-              style: value === 'random' ? styles.activeSegment : styles.inactiveSegment
-            },
-          ]}
-          style={styles.segmentGroup}
-        />
-
-          {/* 参数输入 */}
-          {isVisible && (
-          <View style={styles.inputGroup}>
-            {(['m', 'n', 'k', 'j', 's'] as const).map(key => (
-              <React.Fragment key={key}>
-                <TextInput
-                  mode="outlined"
-                  style={styles.shortInput}
-                  placeholder={key}
-                  maxLength={3}
-                  value={form[key]}
-                  onChangeText={v => setField(key, v)}
-                  editable={isCustom}
-                />
-                {key !== 's' && <Text style={styles.dash}>-</Text>}
-              </React.Fragment>
-            ))}
-          </View>
-          )}
-
-          {/* 错误提示 */}
-          {error && (
-            <Card style={styles.errorCard}>
-              <Card.Content><Text style={styles.errorText}>{error}</Text></Card.Content>
-            </Card>
-          )}
-
-          {/* EXECUTE */}
-          <Button
-            style={[styles.button, styles.executeButton]}
-            mode="contained"
-            onPress={onExecute}
-            loading={loading}
-            disabled={loading}
-          >
-            {loading ? '计算中…' : 'Execute'}
-          </Button>
-
-          {/* 结果 */}
-          {result && (
-            <Card style={styles.resultCard}>
-              <Card.Title title={`计算结果（${result.ms} ms）`} />
-              <Card.Content>
-                <Text style={styles.title}>样本池（{result.samplePool.length}）</Text>
-                <Text>{result.samplePool.join(', ')}</Text>
-
-                <Text style={styles.title}>
-                  最优组合（{result.groups.length} 组）
-                </Text>
-                <List.Section>
-                  {result.groups.map((g, i) => (
-                    <List.Item
-                      key={i}
-                      title={`组 ${i + 1}: ${g.join(', ')}`}
-                      left={props => <List.Icon {...props} icon="format-list-bulleted" />}
+export default function app(){
+    const [banner, setBanner] = React.useState(true);
+    const [isCustom, setIsCustom] = useState(false);
+    const [m, setM] = React.useState('45');
+    const [n, setN] = React.useState('8');
+    const [k, setK] = React.useState('6');
+    const [j, setJ] = React.useState('4');
+    const [s, setS] = React.useState('4');
+    const [minGroup,setMinGroup] = React.useState('1');
+    const [loading, setLoading] = React.useState(false);
+    const theme = useTheme();
+    const [result, setResult] = React.useState<Result>();
+    const [shownResult, setShownResult] = React.useState(false);
+    return(
+        <SafeAreaView>
+            <View style={{padding: 10}}>
+                <SegmentedButtons style={{paddingBottom: 20}}
+                    value={isCustom ? 'custom' : 'random'}
+                    onValueChange={value => {
+                        setIsCustom(value === 'custom');
+                        if (value === 'random') {
+                            const params = randomParams();
+                            setM(params.m.toString());
+                            setN(params.n.toString());
+                            setK(params.k.toString());
+                            setJ(params.j.toString());
+                            setS(params.s.toString());
+                            setMinGroup('1');
+                        }
+                    }}
+                    buttons={[
+                        { value: 'random', label: 'Random' },
+                        { value: 'custom', label: 'Custom' },
+                    ]}/>
+                <View style={styles.row}>
+                    <TextInput
+                        mode="outlined"
+                        label="m"
+                        value={m}
+                        onChangeText={text => {setM(text)}}
+                        keyboardType="numeric"
+                        maxLength={2}
+                        style={styles.textInput}
+                        disabled={!isCustom}
                     />
-                  ))}
-                </List.Section>
-              </Card.Content>
-            </Card>
-          )}
-        </View>
-      </ScrollView>
-    </PaperProvider>
-  );
+                    <Text style={styles.desc}>45≤m≤54</Text>
+                </View>
+                <View style={styles.row}>
+                    <TextInput
+                        mode="outlined"
+                        label="n"
+                        value={n}
+                        onChangeText={text => {setN(text)}}
+                        keyboardType="numeric"
+                        maxLength={2}
+                        style={styles.textInput}
+                        disabled={!isCustom}
+                    />
+                    <Text style={styles.desc}>7≤n≤25</Text>
+                </View>
+                <View style={styles.row}>
+                    <TextInput
+                        mode="outlined"
+                        label="k"
+                        value={k}
+                        onChangeText={text => {setK(text)}}
+                        keyboardType="numeric"
+                        maxLength={2}
+                        style={styles.textInput}
+                        disabled={!isCustom}
+                    />
+                    <Text style={styles.desc}>4≤k≤7</Text>
+                </View>
+                <View style={styles.row}>
+                    <TextInput
+                        mode="outlined"
+                        label="j"
+                        value={j}
+                        onChangeText={text => {setJ(text)}}
+                        keyboardType="numeric"
+                        maxLength={2}
+                        style={styles.textInput}
+                        disabled={!isCustom}
+                    />
+                    <Text style={styles.desc}>j≤k</Text>
+                </View>
+                <View style={styles.row}>
+                    <TextInput
+                        mode="outlined"
+                        label="s"
+                        value={s}
+                        onChangeText={text => {setS(text)}}
+                        keyboardType="numeric"
+                        maxLength={2}
+                        style={styles.textInput}
+                        disabled={!isCustom}
+                    />
+                    <Text style={styles.desc}>3≤s≤7</Text>
+                </View>
+                <View style={styles.row}>
+                    <Text style={styles.desc}>At least</Text>
+                    <TextInput
+                        mode="outlined"
+                        label="S"
+                        value={minGroup}
+                        onChangeText={text => {setMinGroup(text)}}
+                        keyboardType="numeric"
+                        maxLength={1}
+                        style={styles.textInput}
+                        disabled={!isCustom}
+                    />
+                    <Text style={styles.desc}>Sample</Text>
+                </View>
+                <Button mode="contained" onPress={async () => {
+                    setLoading(true);
+                    const params = {
+                        m: parseInt(m),
+                        n: parseInt(n),
+                        k: parseInt(k),
+                        j: parseInt(j),
+                        s: parseInt(s),
+                        minSGroups: parseInt(minGroup),
+                    };
+                    const error = validateParams(params);
+                    if (error) {
+                        console.error(error);
+                        setLoading(false);
+                    } else {
+                        try {
+                        const result = await runOptimalAlgorithm(params);
+                        setLoading(false);
+                        setResult(result);
+                        setShownResult(true);
+                        }
+                        catch (error) {
+                            console.error(error);
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }} style={{margin: 10}}
+                loading={loading}
+                disabled={loading}
+                >
+                    Execute
+                </Button>
+                <Portal>
+                    <Modal visible={shownResult} onDismiss={()=>setShownResult(false)} contentContainerStyle={styles.containerStyle}>
+                            <Card style={styles.resultCard}>
+                                <Card.Title title={`计算结果（${result?.ms ?? 0} ms）`} />
+                                <Card.Content style={{maxHeight: "80%"}}>
+                                <Text style={styles.title}>样本池（{result?.samplePool.length}）</Text>
+                                <Text>{result?.samplePool.join(', ')}</Text>
+                                <Text style={styles.title}>
+                                    最优组合（{result?.groups.length} 组）
+                                </Text>
+                                <FlatList style={{margin: 10}}
+                                    data={result?.groups}
+                                    keyExtractor={(_item, index) => index.toString()}
+                                    renderItem={({ item }) => (
+                                        <List.Item
+                                            title={`组 ${item.join(', ')}`}
+                                            left={props => <List.Icon {...props} icon="format-list-bulleted" />}
+                                        />
+                                    )}
+                                />
+                                </Card.Content>
+                                <Card.Actions style={styles.buttonGroup}>
+                                    <Button mode="contained" onPress={() => {
+                                        setShownResult(false);
+                                    }} style={{margin: 10,flex: 1,backgroundColor:theme.colors.onPrimaryContainer}}>
+                                        Save
+                                    </Button>
+                                    <Button mode="contained" onPress={() => {
+                                        setShownResult(false);
+                                    }} style={{margin: 10,flex: 1,backgroundColor:theme.colors.secondary}}>
+                                        Clear
+                                    </Button>
+                                </Card.Actions>
+
+                            </Card>
+                    </Modal>
+                </Portal>
+            </View>
+        </SafeAreaView>
+    );
 }
 
-/* ------- 样式 ------- */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 300
-  },
-  segmentGroup: {
-    width: 200,
-    marginBottom: 20,
-  },
-  activeSegment: {
-    backgroundColor: '#2196F3',
-  },
-  inactiveSegment: {
-    backgroundColor: '#F5F5F5',
-  },
-  inactiveText: {
-    color: '#37474F',
-  },
-  executeButton: {
-    backgroundColor: '#CCCCCC',
-    marginTop: 30
-  },
-  inputGroup: {
-    flexDirection: 'row',
-    flexWrap: 'wrap', // 允许换行
-    justifyContent: 'center',
-    padding: 10
-  },
-  shortInput: {
-    width: 40,
-    height: 40,
-    textAlignVertical: 'center', // 垂直居中（Android）
-    paddingVertical: 0           // 清除默认垂直 padding
-  },
-  dash: {
-    fontSize: 20,
-    lineHeight: 40,
-    marginHorizontal: 5
-  },
-  errorCard: { backgroundColor: '#FFEBEE', width: '90%', marginTop: 10 },
-  errorText: { color: '#D32F2F' },
-  resultCard: { width: '90%', marginTop: 20 },
-  title: { fontWeight: 'bold', marginTop: 10 },
-  button:    { width: 200, marginBottom: 20 },
-});
+    banner: {
+        margin: 10
+    },
+    row:{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        padding: 10,
+    },
+    desc:{
+        flex: 1,
+        textAlign: 'center',
+        padding: 10,
+        fontSize: 20,
+        alignSelf: 'center',
+        color: DefaultTheme.colors.secondary,
+    },
+    textInput:{
+        flex: 1,
+        marginRight: 10,
+        textAlign: 'center',
+    },
+    buttonGroup:{
+        flexDirection: 'row',
+        justifyContent: 'space-around'
+    },
+    containerStyle: {
+    },
+    resultCard: {
+        margin: 20,
+        padding: 10,
+        backgroundColor: DefaultTheme.colors.background,
+    },
+    title: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
 
-export default App;
+
+
+
+});
