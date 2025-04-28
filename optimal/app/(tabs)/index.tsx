@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Provider as PaperProvider, Button, TextInput, Text, Card, DefaultTheme } from 'react-native-paper';
+import { Provider as PaperProvider, Button, TextInput, Text, SegmentedButtons, DefaultTheme } from 'react-native-paper';
 
 const App = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [value, setValue] = useState('random');
   const [inputs, setInputs] = useState({
     part1: '',
     part2: '',
@@ -11,6 +12,8 @@ const App = () => {
     part4: '',
     part5: ''
   });
+
+  const toggleVisibility = () => setIsVisible(!isVisible);
   const customTheme = {
     ...DefaultTheme,
     colors: {
@@ -23,9 +26,7 @@ const App = () => {
     },
   };
 
-  const toggleMode = () => {
-    //TODO  更改模式
-    setIsVisible(!isVisible);}
+
 
   const handleInputChange = (text: string, part: string) => {
     setInputs(prev => ({
@@ -34,72 +35,96 @@ const App = () => {
     }));
   };
 
+  function handleCustomMode() {
+    toggleVisibility()
+  }
+
+  function handleRandomMode() {
+    toggleVisibility()
+  }
+
   return (
     <PaperProvider theme={customTheme}>
       <View style={styles.container}>
         {/* 显示/隐藏控制按钮 */}
-        <Button 
-          mode="contained" 
-          onPress={toggleMode}
-          style={styles.button}
-        >
-          {isVisible ? 'custom' : 'random'}
-        </Button>
+        <SegmentedButtons
+          value={value}
+          onValueChange={(newValue) => {
+            setValue(newValue); // 必须保留的value更新
+            // 这里可以添加自定义点击逻辑
+            console.log('当前选中:', newValue);
+            if(newValue === 'custom') handleCustomMode();
+            if(newValue === 'random') handleRandomMode();
+          }}
+          buttons={[
+            {
+              value: 'custom',
+              label: 'custom',
+              style: value === 'custom' ? styles.activeSegment : styles.inactiveSegment
+            },
+            {
+              value: 'random',
+              label: 'random',
+              style: value === 'random' ? styles.activeSegment : styles.inactiveSegment
+            },
+          ]}
+          style={styles.segmentGroup}
+        />
 
         {/* 输入框组 */}
-        {isVisible && (
-          <View style={styles.inputGroup}>
-              <TextInput
-                mode="outlined"
-                style={styles.shortInput}
-                placeholder="m"
-                maxLength={3}
-                value={inputs.part1}
-                onChangeText={(t: string) => handleInputChange(t, 'part1')}
-              />
-              <Text style={styles.dash}>-</Text>
-              <TextInput
-                mode="outlined"
-                style={styles.shortInput}
-                placeholder="n"
-                maxLength={3}
-                value={inputs.part2}
-                onChangeText={t => handleInputChange(t, 'part2')}
-              />
-              <Text style={styles.dash}>-</Text>
-              <TextInput
-                mode="outlined"
-                style={styles.shortInput}
-                placeholder="k"
-                maxLength={3}
-                value={inputs.part3}
-                onChangeText={t => handleInputChange(t, 'part3')}
-              />
-              <Text style={styles.dash}>-</Text>
-              <TextInput
-                mode="outlined"
-                style={styles.shortInput}
-                placeholder="j"
-                maxLength={4}
-                value={inputs.part4}
-                onChangeText={t => handleInputChange(t, 'part4')}
-              />
-              <Text style={styles.dash}>-</Text>
-              <TextInput
-                mode="outlined"
-                style={styles.shortInput}
-                placeholder="s"
-                maxLength={5}
-                value={inputs.part5}
-                onChangeText={t => handleInputChange(t, 'part5')}
-              />
-          </View>
-        )}
+  {isVisible && (
+    <View style={styles.inputGroup}>
+      <TextInput
+        mode="outlined"
+        style={styles.shortInput}
+        placeholder="m"
+        maxLength={3}
+        value={inputs.part1}
+        onChangeText={(t: string) => handleInputChange(t, 'part1')}
+      />
+      <Text style={styles.dash}>-</Text>
+      <TextInput
+        mode="outlined"
+        style={styles.shortInput}
+        placeholder="n"
+        maxLength={3}
+        value={inputs.part2}
+        onChangeText={t => handleInputChange(t, 'part2')}
+      />
+      <Text style={styles.dash}>-</Text>
+      <TextInput
+        mode="outlined"
+        style={styles.shortInput}
+        placeholder="k"
+        maxLength={3}
+        value={inputs.part3}
+        onChangeText={t => handleInputChange(t, 'part3')}
+      />
+      <Text style={styles.dash}>-</Text>
+      <TextInput
+        mode="outlined"
+        style={styles.shortInput}
+        placeholder="j"
+        maxLength={4}
+        value={inputs.part4}
+        onChangeText={t => handleInputChange(t, 'part4')}
+      />
+      <Text style={styles.dash}>-</Text>
+      <TextInput
+        mode="outlined"
+        style={styles.shortInput}
+        placeholder="s"
+        maxLength={5}
+        value={inputs.part5}
+        onChangeText={t => handleInputChange(t, 'part5')}
+      />
+    </View>
+  )}
 
         {/* execute */}
         <Button 
           mode="contained" 
-          style={[styles.button, styles.executeButton]}
+          style={[styles.executeButton]}
           onPress={() =>([])}
         >
           execute
@@ -117,9 +142,18 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 300
   },
-  button: {
+  segmentGroup: {
+    width: 200,
     marginBottom: 20,
-    width: 200
+  },
+  activeSegment: {
+    backgroundColor: '#2196F3',
+  },
+  inactiveSegment: {
+    backgroundColor: '#F5F5F5',
+  },
+  inactiveText: {
+    color: '#37474F',
   },
   executeButton: {
     backgroundColor: '#CCCCCC',
