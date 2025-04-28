@@ -1,5 +1,7 @@
 // optimal/app/services/optimalService.ts
 import { solve, Params, Result } from '../../src/optimal';
+import { recordsCollection } from '../db';
+import { Q } from '@nozbe/watermelondb';
 
 /** 参数校验——不合法返回字符串错误信息；合法则返回 null */
 export function validateParams(p: Params): string | null {
@@ -23,11 +25,43 @@ export function randomParams(): Params {
   return { m, n, k, j, s };
 }
 
-/** 封装算法调用（异步是为了以后好迁移到 worker） */
-export async function runOptimalAlgorithm(params: Params): Promise<Result> {
-  const error = validateParams(params);
-  if (error) throw new Error(error);
 
-  const timeoutMs = 30_000; // 30 s
-  return solve({ ...params, minSGroups: 1, toLabel: true, timeoutMs });
-}
+export async function getRunCount(params: Params): Promise<number> {
+    const { m, n, k, j, s } = params;
+    
+    const count = await recordsCollection.query(
+      Q.where('m', m),
+      Q.where('n', n),
+      Q.where('k', k),
+      Q.where('j', j),
+      Q.where('s', s)
+    ).fetchCount();
+    
+    return count + 1;
+  }
+
+// 修改算法调用函数
+export async function runOptimalAlgorithm(params: Params): Promise<{
+    result: Result;
+    runCount: number;
+  }> {
+    const error = validateParams(params);
+    if (error) throw new Error(error);
+  
+    // 获取该参数组合的运行次数
+    const runCount = await getRunCount(params);
+  
+    // 执行算法
+    const timeoutMs = 30_000; // 30秒
+    const result = solve({ 
+      ...params, 
+      minSGroups: 1, 
+      toLabel: true, 
+      timeoutMs 
+    });
+  
+    return {
+      result,
+      runCount
+    };
+  }

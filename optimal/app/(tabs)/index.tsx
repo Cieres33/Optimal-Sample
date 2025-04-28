@@ -1,5 +1,5 @@
 // optimal/app/(tabs)/index.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import {
   Provider as PaperProvider,
@@ -9,20 +9,30 @@ import {
   Card,
   DefaultTheme,
   List,
-  SegmentedButtons
+  SegmentedButtons,
+  Snackbar
 } from 'react-native-paper';
+
+// 数据库导入
 import { database } from '../db';
-if (__DEV__) {
-  console.log('数据库已初始化:', database.collections.get('records'))
-}
+import { 
+  getAllRecords, 
+  storeResult as saveToDatabase 
+} from '../services/dbService';
 
 import {
   runOptimalAlgorithm,
   validateParams,
+  getRunCount, 
   randomParams,
 } from '../services/optimalService';
 
 import { Params, Result } from '../../src/optimal';
+
+// 调试信息
+if (__DEV__) {
+  console.log('数据库已初始化:', database.collections.get('records'));
+}
 
 const App = () => {
   /* ------- UI 状态 ------- */
@@ -36,9 +46,14 @@ const App = () => {
     s: '',
   });
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
-  const [result,  setResult]  = useState<Result | null>(null);
-
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
+  const [runCount, setRunCount] = useState(1);
+  
+  // 存储相关状态
+  const [storeLoading, setStoreLoading] = useState(false);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   /* ------- 主题 ------- */
   const customTheme = {
@@ -53,6 +68,12 @@ const App = () => {
     },
   };
 
+  // 初始化
+  useEffect(() => {
+    // 首次加载时使用随机模式
+    handleRandomMode();
+  }, []);
+
   const setField = (key: keyof typeof form, value: string) => {
     if (/^\d*$/.test(value)) setForm(f => ({ ...f, [key]: value }));
   };
@@ -61,6 +82,7 @@ const App = () => {
   function handleCustomMode() {
     setIsCustom(true);
   }
+  
   // 切到 Random：roll 新参数写入 form，不可编辑
   function handleRandomMode() {
     const p = randomParams();
@@ -73,8 +95,6 @@ const App = () => {
     });
     setIsCustom(false);
   }
-
-
 
   /** 点击 Execute */
   const onExecute = async () => {
@@ -101,21 +121,68 @@ const App = () => {
         s: params.s.toString(),
       });
     }
+    
     // 2. 校验
     const errMsg = validateParams(params);
     if (errMsg) { setError(errMsg); return; }
 
-    // 3. 调用算法
-    /* 3. 调用算法 ----------------------------------------- */
+    // 3. 获取运行次数
+    try {
+      const count = await getRunCount(params);
+      setRunCount(count);
+    } catch (e) {
+      console.error('获取运行次数失败:', e);
+    }
+
+    // 4. 调用算法
     try {
       setLoading(true);
       const r = await runOptimalAlgorithm(params);
-      setResult(r);
+      setResult(r.result);
+      setRunCount(r.runCount);
     } catch (e: any) {
       setError(e.message || '执行失败');
     } finally {
       setLoading(false);
     }
+  };
+
+  // 存储结果到数据库
+  const handleStore = async () => {
+    if (!result) {
+      showSnackbar('没有可存储的结果');
+      return;
+    }
+
+    try {
+      setStoreLoading(true);
+      const params = {
+        m: parseInt(form.m),
+        n: parseInt(form.n),
+        k: parseInt(form.k),
+        j: parseInt(form.j),
+        s: parseInt(form.s)
+      };
+      
+      await saveToDatabase(params, result, runCount);
+      showSnackbar('结果已保存');
+    } catch (e) {
+      console.error('存储失败:', e);
+      showSnackbar('存储失败');
+    } finally {
+      setStoreLoading(false);
+    }
+  };
+
+  // 清除结果
+  const handleClear = () => {
+    setResult(null);
+  };
+
+  // 显示提示消息
+  const showSnackbar = (message: string) => {
+    setSnackbarMessage(message);
+    setSnackbarVisible(true);
   };
 
   return (
@@ -145,7 +212,7 @@ const App = () => {
             style={styles.segmentGroup}
           />
 
-          {/* 参数输入（始终显示，custom 可编辑，random 只读） */}
+          {/* 参数输入 */}
           <View style={styles.inputGroup}>
             {(['m','n','k','j','s'] as const).map(key => (
               <React.Fragment key={key}>
@@ -183,10 +250,35 @@ const App = () => {
             {loading ? '计算中…' : 'Execute'}
           </Button>
 
+          {/* 结果操作按钮 */}
+          {result && (
+            <View style={styles.actionButtons}>
+              <Button
+                mode="contained"
+                onPress={handleStore}
+                style={[styles.actionButton, styles.storeButton]}
+                loading={storeLoading}
+                disabled={storeLoading}
+              >
+                Store
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={handleClear}
+                style={styles.actionButton}
+              >
+                Clear
+              </Button>
+            </View>
+          )}
+
           {/* 结果展示 */}
           {result && (
             <Card style={styles.resultCard}>
-              <Card.Title title={`结果 (${result.ms} ms)`} />
+              <Card.Title 
+                title={`结果 (${result.ms} ms)`} 
+                subtitle={`参数: ${form.m}-${form.n}-${form.k}-${form.j}-${form.s}-${runCount}-${result.groups.length}`}
+              />
               <Card.Content>
                 <Text style={styles.title}>
                   样本池 ({result.samplePool.length})
@@ -209,6 +301,18 @@ const App = () => {
           )}
         </View>
       </ScrollView>
+
+      {/* 提示消息 */}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        action={{
+          label: '关闭',
+          onPress: () => setSnackbarVisible(false),
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </PaperProvider>
   );
 };
@@ -222,6 +326,19 @@ const styles = StyleSheet.create({
   shortInput:{ width:40, height:40, textAlignVertical:'center', paddingVertical:0 },
   dash:{ fontSize:20, lineHeight:40, marginHorizontal:5 },
   button:{ width:200, marginVertical:20 },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+    marginBottom: 10
+  },
+  actionButton: {
+    margin: 5,
+    width: 100
+  },
+  storeButton: {
+    backgroundColor: '#4CAF50'
+  },
   errorCard:{ backgroundColor:'#FFEBEE', width:'90%', marginTop:10 },
   errorText:{ color:'#D32F2F' },
   progressCard:{ width:'90%', marginVertical:15, backgroundColor:'#F5F5F5' },

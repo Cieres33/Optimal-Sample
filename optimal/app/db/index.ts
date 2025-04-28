@@ -15,11 +15,9 @@ const adapter = new SQLiteAdapter({
 // 初始化数据库
 export const database = new Database({
   adapter,
-  modelClasses: [
-    Record,
-    Result
-  ],
-})
+  modelClasses: [Record, Result],
+  actionsEnabled: true,
+} as any);
 
 // 导出模型以便在应用中使用
 export const recordsCollection = database.collections.get('records')
