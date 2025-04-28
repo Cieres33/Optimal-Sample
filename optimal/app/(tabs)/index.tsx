@@ -11,6 +11,10 @@ import {
   List,
   SegmentedButtons
 } from 'react-native-paper';
+import { database } from '../db';
+if (__DEV__) {
+  console.log('数据库已初始化:', database.collections.get('records'))
+}
 
 import {
   runOptimalAlgorithm,
