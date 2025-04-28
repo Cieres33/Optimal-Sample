@@ -1,6 +1,6 @@
 // optimal/app/(tabs)/explore.tsx (部分修改)
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, View } from 'react-native';
+import { StyleSheet, FlatList, View, ScrollView, SafeAreaView } from 'react-native';
 import { Card, List, Divider, Button, ActivityIndicator, Text } from 'react-native-paper';
 // 删除通用Model导入
 // import { Model } from '@nozbe/watermelondb';
@@ -84,17 +84,31 @@ export default function ExploreScreen() {
   // 渲染历史记录界面
   const renderHistoryList = () => (
     <>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">历史记录</ThemedText>
-        <Button
-          mode="outlined"
-          icon="refresh"
-          onPress={handleRefresh}
-          style={styles.refreshButton}
-        >
-          刷新
-        </Button>
-      </ThemedView>
+<ThemedView style={styles.titleContainer}>
+  {/* 文字部分使用独立容器 */}
+  <View style={styles.textContainer}>
+    <ThemedText 
+      type="title" 
+      numberOfLines={2}
+      style={styles.titleText}
+    >
+      History Record
+    </ThemedText>
+  </View>
+  
+  {/* 按钮容器 */}
+  <View style={styles.buttonContainer}>
+    <Button
+      mode="outlined"
+      icon="refresh"
+      onPress={handleRefresh}
+      style={styles.refreshButton}
+      contentStyle={{ height: 40 }}
+    >
+      Refresh
+    </Button>
+  </View>
+</ThemedView>
       
       {loading ? (
         <ActivityIndicator size="large" style={styles.loader} />
@@ -106,7 +120,7 @@ export default function ExploreScreen() {
               <React.Fragment key={item.id}>
                 <List.Item
                   title={`#${index + 1}: ${item.displayString}`}
-                  description={`运行时间: ${item.executionTime}ms`}
+                  description={`RunTime: ${item.executionTime}ms`}
                   onPress={() => handleViewRecord(item.id)}
                   left={p => <List.Icon {...p} icon="history" />}
                   right={p => <List.Icon {...p} icon="chevron-right" />}
@@ -124,7 +138,10 @@ export default function ExploreScreen() {
     if (!selectedRecord || !recordDetail) return null;
     
     return (
-      <>
+      <ScrollView 
+        contentContainerStyle={styles.detailContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <ThemedView style={styles.titleContainer}>
           <Button
             mode="outlined"
@@ -132,9 +149,15 @@ export default function ExploreScreen() {
             onPress={handleBack}
             style={styles.backButton}
           >
-            返回
+            Back
           </Button>
-          <ThemedText type="title">记录详情</ThemedText>
+          <ThemedText 
+            type="title" 
+            numberOfLines={2}
+            style={styles.titleText}
+          >
+            Record Detail
+          </ThemedText>
         </ThemedView>
         
         {detailLoading ? (
@@ -142,26 +165,26 @@ export default function ExploreScreen() {
         ) : (
           <Card style={styles.detailCard}>
             <Card.Title 
-              title={`参数: ${selectedRecord.displayString}`}
-              subtitle={`运行时间: ${selectedRecord.executionTime}ms`}
+              title={`Parameters: ${selectedRecord.displayString}`}
+              subtitle={`Runtime: ${selectedRecord.executionTime}ms`}
             />
             <Card.Content>
               <Text style={styles.sectionTitle}>
-                样本池 ({recordDetail.samplePool.length}):
+                Sample Pool ({recordDetail.samplePool.length}):
               </Text>
               <Text style={styles.content}>
                 {recordDetail.samplePool.join(', ')}
               </Text>
               
               <Text style={styles.sectionTitle}>
-                组合 ({recordDetail.groups.length} 组):
+                Groups ({recordDetail.groups.length}):
               </Text>
               
               <List.Section>
                 {recordDetail.groups.map((group, index) => (
                   <List.Item
                     key={index}
-                    title={`组 ${index + 1}: ${group.join(', ')}`}
+                    title={`Group ${index + 1}: ${group.join(', ')}`}
                     left={props => <List.Icon {...props} icon="format-list-bulleted" />}
                   />
                 ))}
@@ -169,45 +192,56 @@ export default function ExploreScreen() {
             </Card.Content>
           </Card>
         )}
-      </>
+      </ScrollView>
     );
   };
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="archivebox.fill"
-          style={styles.headerImage}
-        />
-      }>
+    <SafeAreaView style={{ flex: 1 }}>
+    <ScrollView contentContainerStyle={styles.container}>
       {selectedRecord ? renderRecordDetail() : renderHistoryList()}
-    </ParallaxScrollView>
+    </ScrollView>
+  </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
+
   titleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
+    minHeight: 60,
+    marginTop:30,
     marginBottom: 15,
+    paddingHorizontal: 16, // 增加左右内边距
+  },
+  textContainer: {
+    flex: 1, // 占据剩余空间
+    marginRight: 12, // 与按钮间距
+    justifyContent: 'center',
+  },
+  titleText: {
+    fontSize: 22,
+    lineHeight: 28, // 明确行高
+    flexShrink: 1,  // 允许缩小
+  },
+  buttonContainer: {
+    flexShrink: 0,  // 禁止缩小
+  },
+  refreshButton: {
+    minWidth: 80,   // 保证按钮最小宽度
+  },
+  container: {
+    flex: 1,
+    padding: 16,
   },
   backButton: {
     marginRight: 10,
   },
-  refreshButton: {
-    marginLeft: 10,
+  detailContainer: {
+    paddingBottom: 40, // 确保底部留白
   },
   listCard: {
     width: '100%',
