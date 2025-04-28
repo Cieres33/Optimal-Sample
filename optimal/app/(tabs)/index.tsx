@@ -216,7 +216,7 @@ export default function app(){
                     Execute
                 </Button>
                 <Portal>
-                    <Modal visible={shownResult} onDismiss={()=>setShownResult(false)} contentContainerStyle={styles.containerStyle}>
+                    <Modal visible={shownResult} onDismiss={()=>setShownResult(false)}>
                             <Card style={styles.resultCard}>
                                 <Card.Title title={`计算结果（${result?.ms ?? 0} ms）`} />
                                 <Card.Content style={{maxHeight: "80%"}}>
@@ -283,8 +283,6 @@ const styles = StyleSheet.create({
     buttonGroup:{
         flexDirection: 'row',
         justifyContent: 'space-around'
-    },
-    containerStyle: {
     },
     resultCard: {
         margin: 20,

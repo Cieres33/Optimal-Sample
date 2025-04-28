@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet,  View, ScrollView, SafeAreaView, Alert } from 'react-native';
-import { Card, List, Divider, Button, ActivityIndicator, Text, Modal, Portal, Provider as PaperProvider } from 'react-native-paper';
+import { StyleSheet,  View, ScrollView, SafeAreaView, Alert,FlatList } from 'react-native';
+import { Card, List, Divider, Button, ActivityIndicator, Text, Modal, Portal, Dialog, Provider as PaperProvider, useTheme } from 'react-native-paper';
+
 import { database } from '../db';
 
 // 导入具体的模型类而不是通用Model
@@ -28,7 +29,7 @@ export default function ExploreScreen() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  
+  const theme = useTheme();
   // 首次加载获取所有记录
   useEffect(() => {
     setLoading(true);
@@ -61,12 +62,13 @@ export default function ExploreScreen() {
     try {
       // 确认对话框
       Alert.alert(
-        "确认删除",
-        "确定要删除这条记录吗？",
+        "Delete Confirmation",
+        "Are you sure you want to delete this record?",
         [
-          { text: "取消", style: "cancel" },
-          { 
-            text: "确定",
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
             onPress: async () => {
               await deleteRecord(selectedRecord.id);
               handleBack(); // 返回列表
@@ -76,7 +78,7 @@ export default function ExploreScreen() {
       );
     } catch (e) {
       console.error("删除记录失败:", e);
-      Alert.alert("错误", "删除记录失败");
+      Alert.alert("Error", "Failed to delete record.");
     }
   };
 
@@ -96,68 +98,55 @@ export default function ExploreScreen() {
         <Modal 
           visible={modalVisible}
           onDismiss={handleBack}
-          contentContainerStyle={styles.modalContainer}
           dismissable={true}
+          contentContainerStyle={styles.modalContainer}
         >
-          <ScrollView
-            contentContainerStyle={styles.detailContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.titleContainer}>
-              <Button
-                mode="outlined"
-                icon="arrow-left"
-                onPress={handleBack}
-                style={styles.backButton}
-              >
-                Back
-              </Button>
-              {/* 删除按钮 */}
-              <Button
-                mode="contained"
-                icon="delete"
-                onPress={handleDelete}
-                style={styles.headerButton}
-                buttonColor="#ff4444"
-                textColor="#fff"
+          <Card style={styles.detailCard}>
+            <Card.Title
+              title={`Parameters: ${selectedRecord.displayString}`}
+              subtitle={`Runtime: ${selectedRecord.executionTime}ms`}
+            />
+            <Card.Content style={{maxHeight: "80%"}}>
+              <Text style={styles.sectionTitle}>
+                Sample Pool ({recordDetail.samplePool.length}):
+              </Text>
+              <Text style={styles.content}>
+                {recordDetail.samplePool.join(', ')}
+              </Text>
+              
+              <Text style={styles.sectionTitle}>
+                Groups ({recordDetail.groups.length}):
+              </Text>
+              
+              <FlatList
+                style={{margin: 10}}
+                data={recordDetail.groups}
+                keyExtractor={(_, index) => index.toString()}
+                renderItem={({ item }) => (
+                  <List.Item
+                    title={`Group ${item.join(', ')}`}
+                    left={props => <List.Icon {...props} icon="format-list-bulleted" />}
+                  />
+                )}
+              />
+            </Card.Content>
+            <Card.Actions style={styles.buttonGroup}>
+              <Button 
+                mode="contained" 
+                onPress={handleDelete} 
+                style={{margin: 10, flex: 1, backgroundColor: theme.colors.error}}
               >
                 Delete
               </Button>
-            </View>
-            
-            {detailLoading ? (
-              <ActivityIndicator size="large" style={styles.loader} />
-            ) : (
-              <Card style={styles.detailCard}>
-                <Card.Title
-                  title={`Parameters: ${selectedRecord.displayString}`}
-                  subtitle={`Runtime: ${selectedRecord.executionTime}ms`}
-                />
-                <Card.Content>
-                  <Text style={styles.sectionTitle}>
-                    Sample Pool ({recordDetail.samplePool.length}):
-                  </Text>
-                  <Text style={styles.content}>
-                    {recordDetail.samplePool.join(', ')}
-                  </Text>
-                  
-                  <Text style={styles.sectionTitle}>
-                    Groups ({recordDetail.groups.length}):
-                  </Text>
-                  
-                  <List.Section>
-                    {recordDetail.groups.map((group, index) => (
-                      <List.Item
-                        key={index}
-                        title={`Group ${index + 1}: ${group.join(', ')}`}
-                        left={props => <List.Icon {...props} icon="format-list-bulleted" />}
-                      />
-                    ))}
-                  </List.Section>
-                </Card.Content>
-              </Card>
-            )}
-          </ScrollView>
+              <Button 
+                mode="contained" 
+                onPress={handleBack} 
+                style={{margin: 10, flex: 1, backgroundColor: theme.colors.secondary}}
+              >
+                Close
+              </Button>
+            </Card.Actions>
+          </Card>
         </Modal>
       </Portal>
     );
@@ -174,7 +163,7 @@ export default function ExploreScreen() {
           {loading ? (
             <ActivityIndicator size="large" style={styles.loader} />
           ) : records.length === 0 ? (
-            <Text style={styles.emptyText}>暂无历史记录</Text>
+            <Text style={styles.emptyText}>No history record</Text>
           ) : (
             <Card style={styles.listCard}>
               {records.map((item, index) => (
@@ -203,11 +192,7 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   // 保留原有样式...
   modalContainer: {
-    backgroundColor: 'white',
     margin: 20,
-    borderRadius: 10,
-    padding: 20,
-    maxHeight: '90%',
   },
   titleContainer: {
     flexDirection: 'row',
@@ -266,9 +251,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   detailCard: {
-    width: '100%',
     marginBottom: 20,
-    marginHorizontal: 0,
   },
   loader: {
     marginVertical: 30,
@@ -287,5 +270,8 @@ const styles = StyleSheet.create({
   },
   content: {
     marginBottom: 10,
-  }
+  },buttonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-around'
+  },
 });
