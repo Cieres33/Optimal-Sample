@@ -138,6 +138,7 @@ const App = () => {
         />
 
           {/* 参数输入 */}
+          {isVisible && (
           <View style={styles.inputGroup}>
             {(['m', 'n', 'k', 'j', 's'] as const).map(key => (
               <React.Fragment key={key}>
@@ -154,6 +155,7 @@ const App = () => {
               </React.Fragment>
             ))}
           </View>
+          )}
 
           {/* 错误提示 */}
           {error && (
