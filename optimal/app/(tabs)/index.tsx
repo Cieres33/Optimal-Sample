@@ -8,10 +8,10 @@ import {
     DefaultTheme,
     List,
     SegmentedButtons,
-    Banner,
     useTheme,
     Portal,
     Modal,
+    Banner,
 } from 'react-native-paper';
 
 import {
@@ -20,11 +20,14 @@ import {
     randomParams,
 } from '../services/optimalService';
 
-import { Params, Result } from '../../src/optimal';
+import { Result } from '../../src/optimal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import {
+    storeResult as saveToDatabase
+    } from '../services/dbService';
+
 export default function app(){
-    const [banner, setBanner] = React.useState(true);
     const [isCustom, setIsCustom] = useState(false);
     const [m, setM] = React.useState('45');
     const [n, setN] = React.useState('8');
@@ -36,10 +39,53 @@ export default function app(){
     const theme = useTheme();
     const [result, setResult] = React.useState<Result>();
     const [shownResult, setShownResult] = React.useState(false);
+    const [storeLoading, setStoreLoading] = React.useState(false);
+    const [snackbarVisible, setSnackbarVisible] = React.useState(false);
+    const [snackbarMessage, setSnackbarMessage] = React.useState('');
+    const [runCount, setRunCount] = React.useState(0);
+    const showSnackbar = (message: string) => {
+        setSnackbarMessage(message);
+        setSnackbarVisible(true);
+        };
+    const handleStore = async () => {
+        if (!result) {
+            showSnackbar('No result to save'); return;
+            }
+            try {
+                setStoreLoading(true);
+                const params = {
+                    m: parseInt(m),
+                    n: parseInt(n),
+                    k: parseInt(k),
+                    j: parseInt(j),
+                    s: parseInt(s)
+                    };
+                    await saveToDatabase(params, result, runCount);
+                    showSnackbar('Result saved successfully!');
+                    } catch (e) {
+                        console.error('Failed to save result!', e);
+                        showSnackbar('Failed to save result!');
+                    } finally {
+                        setStoreLoading(false);
+                        }
+                    };
     return(
         <SafeAreaView>
-            <View style={{padding: 10}}>
-                <SegmentedButtons style={{paddingBottom: 20}}
+            <View>
+                <Banner
+                    visible={snackbarVisible}
+                    actions={
+                        [
+                            {
+                                label: 'Close',
+                                onPress: () => setSnackbarVisible(false),
+                            },
+                        ]}
+                    style={styles.banner}
+                    icon="alert-circle">
+                    {snackbarMessage}
+                </Banner>
+                <SegmentedButtons style={{paddingBottom: 20, flex: 1}}
                     value={isCustom ? 'custom' : 'random'}
                     onValueChange={value => {
                         setIsCustom(value === 'custom');
@@ -192,6 +238,7 @@ export default function app(){
                                 </Card.Content>
                                 <Card.Actions style={styles.buttonGroup}>
                                     <Button mode="contained" onPress={() => {
+                                        handleStore();
                                         setShownResult(false);
                                     }} style={{margin: 10,flex: 1,backgroundColor:theme.colors.onPrimaryContainer}}>
                                         Save

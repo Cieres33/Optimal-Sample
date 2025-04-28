@@ -1,27 +1,26 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import Header from '@/components/header';
+import {MainHeader, HistoryHeader} from '@/components/header';
 export default function TabLayout() {
 
   return (
     <Tabs
       screenOptions={{
         headerShown: true,
-        header: () => (
-          <Header />
-        ),
       }}
       initialRouteName='index'>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Input',
+          header: () => <MainHeader />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Result',
+          header: () => <HistoryHeader />,
         }}
       />
     </Tabs>

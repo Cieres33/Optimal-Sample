@@ -1,6 +1,8 @@
 // optimal/app/services/optimalService.ts
 import {  Params, Result } from '../../src/optimal';
 import  OptimalModule  from '@/modules/optimal-module'
+import { recordsCollection } from '../db';
+import { Q } from '@nozbe/watermelondb';
 
 export function validateParam(type:string,param1:string,param2?:string): boolean{
   switch(type){
@@ -50,6 +52,20 @@ export function randomParams(): Params {
   const j = Math.min(k, 3 + Math.floor(Math.random() * 5)); // ≤ k
   const s = Math.min(j, 3 + Math.floor(Math.random() * 5)); // ≤ j
   return { m, n, k, j, s };
+}
+
+export async function getRunCount(params: Params): Promise<number> {
+  const { m, n, k, j, s } = params;
+  
+  const count = await recordsCollection.query(
+    Q.where('m', m),
+    Q.where('n', n),
+    Q.where('k', k),
+    Q.where('j', j),
+    Q.where('s', s)
+  ).fetchCount();
+  
+  return count + 1;
 }
 
 /** 封装算法调用（异步是为了以后好迁移到 worker） */

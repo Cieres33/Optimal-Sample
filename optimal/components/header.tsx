@@ -1,10 +1,18 @@
 import * as React from 'react';
 import { Appbar } from 'react-native-paper';
 
-const Header = () => (
-  <Appbar.Header>
-    <Appbar.Content title="Optimal Samples Selection" />
-  </Appbar.Header>
-);
+export function MainHeader(){
+    return(
+    <Appbar.Header>
+        <Appbar.Content title="Optimal Samples Selection" />
+    </Appbar.Header>
+    )
+}
 
-export default Header;
+export function HistoryHeader(){
+    return(
+    <Appbar.Header>
+        <Appbar.Content title="History Record" />
+    </Appbar.Header>
+    )
+}
