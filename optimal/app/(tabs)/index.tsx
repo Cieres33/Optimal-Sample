@@ -26,26 +26,24 @@ import { Params, Result } from '../../src/optimal';
 const App = () => {
   /* ------- UI 状态 ------- */
   const [isCustom, setIsCustom] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const [value, setValue] = useState('random');
-  const toggleVisibility = () => setIsVisible(!isVisible);
+  const [value, setValue] = useState<'custom'|'random'>('random');
   const [form, setForm] = useState({
-    m: '45',
-    n: '8',
-    k: '6',
-    j: '4',
-    s: '4',
+    m: '',
+    n: '',
+    k: '',
+    j: '',
+    s: '',
   });
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
   const [result,  setResult]  = useState<Result | null>(null);
-  
-  // 新增进度状态
+
+  // 进度状态
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<string>('');
-  const [timeRemaining, setTimeRemaining] = useState<number | undefined>(undefined);
+  const [timeRemaining, setTimeRemaining] = useState<number|undefined>(undefined);
   const [showProgress, setShowProgress] = useState(false);
-  
+
   // 取消令牌
   const cancelTokenRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
 
@@ -54,43 +52,44 @@ const App = () => {
     ...DefaultTheme,
     colors: {
       ...DefaultTheme.colors,
-      primary: '#2196F3',      // 聚焦时边框颜色
-      text: '#37474F',         // 输入文字颜色
-      placeholder: '#BDBDBD',  // 占位符颜色
-      background: '#FFFFFF',   // 输入框背景色
-      surface: '#F5F5F5'       // 未聚焦边框颜色（需要特殊处理）
+      primary: '#2196F3',
+      text: '#37474F',
+      placeholder: '#BDBDBD',
+      background: '#FFFFFF',
+      surface: '#F5F5F5'
     },
   };
-  const handleInputChange = (text: string, part: string) => {
-    setForm(prev => ({
-      ...prev,
-      [part]: text
-    }));
-  };
 
-  function handleCustomMode() {
-    toggleVisibility()
-  }
-
-  function handleRandomMode() {
-    toggleVisibility()
-  }
-  
   const setField = (key: keyof typeof form, value: string) => {
     if (/^\d*$/.test(value)) setForm(f => ({ ...f, [key]: value }));
   };
 
+  // 切到 Custom：保留已有 form，设为可编辑
+  function handleCustomMode() {
+    setIsCustom(true);
+  }
+  // 切到 Random：roll 新参数写入 form，不可编辑
+  function handleRandomMode() {
+    const p = randomParams();
+    setForm({
+      m: p.m.toString(),
+      n: p.n.toString(),
+      k: p.k.toString(),
+      j: p.j.toString(),
+      s: p.s.toString(),
+    });
+    setIsCustom(false);
+  }
+
   // 取消计算
   const handleCancel = () => {
-    if (cancelTokenRef.current) {
-      cancelTokenRef.current.isCancelled = true;
-      setLoading(false);
-      setShowProgress(false);
-      setError('计算已取消');
-    }
+    cancelTokenRef.current.isCancelled = true;
+    setLoading(false);
+    setShowProgress(false);
+    setError('计算已取消');
   };
 
-  /** 点击 EXECUTE */
+  /** 点击 Execute */
   const onExecute = async () => {
     setError(null);
     setResult(null);
@@ -98,11 +97,9 @@ const App = () => {
     setPhase('');
     setTimeRemaining(undefined);
     setShowProgress(false);
-    
-    // 重置取消令牌
     cancelTokenRef.current = { isCancelled: false };
 
-    /* 1. 收集 / 生成参数 ------------------------------------ */
+    // 1. 收集参数
     let params: Params;
     if (isCustom) {
       params = {
@@ -122,79 +119,65 @@ const App = () => {
         s: params.s.toString(),
       });
     }
+    // 2. 校验
+    const errMsg = validateParams(params);
+    if (errMsg) { setError(errMsg); return; }
 
-    /* 2. 校验 ---------------------------------------------- */
-    const err = validateParams(params);
-    if (err) { setError(err); return; }
-
-    /* 3. 调用算法 ----------------------------------------- */
+    // 3. 调用算法
     try {
       setLoading(true);
       setTimeout(() => {
-        if (loading && !result) {
-          setShowProgress(true);
-        }
+        if (loading && !result) setShowProgress(true);
       }, 500);
 
       const r = await runOptimalAlgorithm(
         params,
-        (progressData: ProgressData) => {
-          console.log('Progress update:', progressData); // 保留调试信息
-          // 立即更新UI状态
-          setProgress(progressData.totalProgress);
-          setPhase(progressData.phase);
-          setTimeRemaining(progressData.timeRemaining);
+        (pd: ProgressData) => {
+          setProgress(pd.totalProgress);
+          setPhase(pd.phase);
+          setTimeRemaining(pd.timeRemaining);
         },
         cancelTokenRef.current
       );
-      
-      if (!cancelTokenRef.current.isCancelled) {
-        setResult(r);
-      }
+      if (!cancelTokenRef.current.isCancelled) setResult(r);
     } catch (e: any) {
-      if (!cancelTokenRef.current.isCancelled) {
-        setError(e.message || '执行失败');
-      }
+      if (!cancelTokenRef.current.isCancelled) setError(e.message || '执行失败');
     } finally {
       setLoading(false);
       setShowProgress(false);
     }
   };
 
-
   return (
     <PaperProvider theme={customTheme}>
       <ScrollView>
-      <View style={styles.container}>
-        {/* 显示/隐藏控制按钮 */}
-        <SegmentedButtons
-          value={value}
-          onValueChange={(newValue) => {
-            setValue(newValue); // 必须保留的value更新
-            // 这里可以添加自定义点击逻辑
-            console.log('当前选中:', newValue);
-            if(newValue === 'custom') handleCustomMode();
-            if(newValue === 'random') handleRandomMode();
-          }}
-          buttons={[
-            {
-              value: 'custom',
-              label: 'custom',
-              style: value === 'custom' ? styles.activeSegment : styles.inactiveSegment
-            },
-            {
-              value: 'random',
-              label: 'random',
-              style: value === 'random' ? styles.activeSegment : styles.inactiveSegment
-            },
-          ]}
-          style={styles.segmentGroup}
-        />
+        <View style={styles.container}>
+          {/* Custom / Random 按钮 */}
+          <SegmentedButtons
+            value={value}
+            onValueChange={nv => {
+              setValue(nv as 'custom'|'random');
+              if (nv === 'custom') handleCustomMode();
+              else handleRandomMode();
+            }}
+            buttons={[
+              {
+                value: 'custom',
+                label: 'Custom',
+                style: value==='custom'?styles.activeSegment:styles.inactiveSegment
+              },
+              {
+                value: 'random',
+                label: 'Random',
+                style: value==='random'?styles.activeSegment:styles.inactiveSegment
+              },
+            ]}
+            style={styles.segmentGroup}
+          />
 
-          {/* 参数输入 */}
-          {isVisible && (
+          {/* 参数输入（始终显示，custom 可编辑，random 只读） */}
           <View style={styles.inputGroup}>
-            {(['m', 'n', 'k', 'j', 's'] as const).map(key => (
+            {(['m','n','k','j','s'] as const).map(key => (
               <React.Fragment key={key}>
                 <TextInput
                   mode="outlined"
@@ -202,99 +185,91 @@ const App = () => {
                   placeholder={key}
                   maxLength={3}
                   value={form[key]}
-                  onChangeText={v => setField(key, v)}
+                  onChangeText={v => setField(key,v)}
                   editable={isCustom}
                 />
-                {key !== 's' && <Text style={styles.dash}>-</Text>}
+                { key!=='s' && <Text style={styles.dash}>-</Text> }
               </React.Fragment>
             ))}
           </View>
-          )}
 
           {/* 错误提示 */}
           {error && (
             <Card style={styles.errorCard}>
-              <Card.Content><Text style={styles.errorText}>{error}</Text></Card.Content>
+              <Card.Content>
+                <Text style={styles.errorText}>{error}</Text>
+              </Card.Content>
             </Card>
           )}
 
-          {/* EXECUTE */}
+          {/* Execute 按钮 */}
           <Button
-            style={[styles.button]}
+            style={styles.button}
             mode="contained"
             onPress={onExecute}
-            loading={loading && !showProgress} // 只在未显示进度条时显示按钮loading
+            loading={loading && !showProgress}
             disabled={loading}
           >
             {loading && !showProgress ? '计算中…' : 'Execute'}
           </Button>
 
-          {/* 进度显示 */}
-          {loading && (
+          {/* 进度卡片 */}
+          {loading && showProgress && (
             <Card style={styles.progressCard}>
               <Card.Content>
-                {progress > 0 ? (
-                  <>
-                    <View style={styles.progressHeader}>
-                      <View style={styles.progressInfo}>
-                        <Text style={styles.progressTitle}>
-                          当前阶段: {
-                            phase === 'greedy' ? '贪心覆盖' : 
-                            phase === 'local' ? '局部搜索' : 
-                            phase === 'annealing' ? '模拟退火' : '初始化'
-                          }
-                        </Text>
-                        <Text style={styles.progressSubtitle}>
-                          {Math.round(progress * 100)}% 完成
-                          {timeRemaining !== undefined && (
-                            <>
-                              {' · '}预计剩余: {
-                                timeRemaining < 1000 ? '即将完成' : 
-                                `${Math.round(timeRemaining / 1000)} 秒`
-                              }
-                            </>
-                          )}
-                        </Text>
-                      </View>
-                      <IconButton
-                        icon="close-circle"
-                        size={24}
-                        onPress={handleCancel}
-                        style={styles.cancelButton}
-                      />
-                    </View>
-                    <ProgressBar 
-                      progress={progress || 0.01}
-                      style={styles.progressBar} 
-                      color={customTheme.colors.primary}
-                    />
-                  </>
-                ) : (
-                  <Text style={{textAlign: 'center'}}>计算中...</Text>
-                )}
+                <View style={styles.progressHeader}>
+                  <View style={styles.progressInfo}>
+                    <Text style={styles.progressTitle}>
+                      阶段: {
+                        phase==='greedy'?'贪心':
+                        phase==='local'?'局部':'模拟退火'
+                      }
+                    </Text>
+                    <Text style={styles.progressSubtitle}>
+                      {Math.round(progress*100)}% 完成
+                      {timeRemaining!=null && (
+                        <> · 预计: {
+                          timeRemaining<1000?'即将':`${Math.round(timeRemaining/1000)}s`
+                        }</>
+                      )}
+                    </Text>
+                  </View>
+                  <IconButton
+                    icon="close-circle"
+                    size={24}
+                    onPress={handleCancel}
+                    style={styles.cancelButton}
+                  />
+                </View>
+                <ProgressBar
+                  progress={progress||0.01}
+                  style={styles.progressBar}
+                  color={customTheme.colors.primary}
+                />
               </Card.Content>
             </Card>
           )}
 
-          {/* 结果 */}
+          {/* 结果展示 */}
           {result && (
             <Card style={styles.resultCard}>
-              <Card.Title title={`计算结果（${result.ms} ms）`} />
+              <Card.Title title={`结果 (${result.ms} ms)`} />
               <Card.Content>
-                <Text style={styles.title}>样本池（{result.samplePool.length}）</Text>
-                <Text>{result.samplePool.join(', ')}</Text>
-
                 <Text style={styles.title}>
-                  最优组合（{result.groups.length} 组）
+                  样本池 ({result.samplePool.length})
+                </Text>
+                <Text>{result.samplePool.join(', ')}</Text>
+                <Text style={styles.title}>
+                  组合 ({result.groups.length} 组)
                 </Text>
                 <List.Section>
-                  {result.groups.map((g, i) => (
+                  {result.groups.map((g,i)=>
                     <List.Item
                       key={i}
-                      title={`组 ${i + 1}: ${g.join(', ')}`}
-                      left={props => <List.Icon {...props} icon="format-list-bulleted" />}
+                      title={`组 ${i+1}: ${g.join(', ')}`}
+                      left={p=> <List.Icon {...p} icon="format-list-bulleted" />}
                     />
-                  ))}
+                  )}
                 </List.Section>
               </Card.Content>
             </Card>
@@ -303,65 +278,28 @@ const App = () => {
       </ScrollView>
     </PaperProvider>
   );
-}
+};
 
-/* ------- 样式 ------- */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 300
-  },
-  segmentGroup: {
-    width: 200,
-    marginBottom: 20,
-  },
-  activeSegment: {
-    backgroundColor: '#2196F3',
-  },
-  inactiveSegment: {
-    backgroundColor: '#F5F5F5',
-  },
-  inactiveText: {
-    color: '#37474F',
-  },
-  inputGroup: {
-    flexDirection: 'row',
-    flexWrap: 'wrap', // 允许换行
-    justifyContent: 'center',
-    padding: 10
-  },
-  shortInput: {
-    width: 40,
-    height: 40,
-    textAlignVertical: 'center', // 垂直居中（Android）
-    paddingVertical: 0           // 清除默认垂直 padding
-  },
-  dash: {
-    fontSize: 20,
-    lineHeight: 40,
-    marginHorizontal: 5
-  },
-  errorCard: { backgroundColor: '#FFEBEE', width: '90%', marginTop: 10 },
-  errorText: { color: '#D32F2F' },
-  resultCard: { width: '90%', marginTop: 20 },
-  title: { fontWeight: 'bold', marginTop: 10 },
-  // 新增样式
-  progressCard: { width: '90%', marginVertical: 15, backgroundColor: '#F5F5F5' },
-  progressBar: { height: 8, marginTop: 10, borderRadius: 4 },
-  progressHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8
-  },
-  progressInfo: { flex: 1 },
-  progressTitle: { fontWeight: 'bold', fontSize: 14 },
-  progressSubtitle: { marginTop: 4, fontSize: 12, color: '#757575' },
-  cancelButton: { margin: 0, padding: 0 },
-  button:    { width: 200, marginBottom: 20 },
+  container: { flex:1, alignItems:'center', padding:20, paddingTop:80 },
+  segmentGroup:{ width:200, marginBottom:20 },
+  activeSegment:{ backgroundColor:'#2196F3' },
+  inactiveSegment:{ backgroundColor:'#F5F5F5' },
+  inputGroup:{ flexDirection:'row', flexWrap:'wrap', justifyContent:'center', padding:10 },
+  shortInput:{ width:40, height:40, textAlignVertical:'center', paddingVertical:0 },
+  dash:{ fontSize:20, lineHeight:40, marginHorizontal:5 },
+  button:{ width:200, marginVertical:20 },
+  errorCard:{ backgroundColor:'#FFEBEE', width:'90%', marginTop:10 },
+  errorText:{ color:'#D32F2F' },
+  progressCard:{ width:'90%', marginVertical:15, backgroundColor:'#F5F5F5' },
+  progressHeader:{ flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:8 },
+  progressInfo:{ flex:1 },
+  progressTitle:{ fontWeight:'bold', fontSize:14 },
+  progressSubtitle:{ fontSize:12, color:'#757575' },
+  cancelButton:{ margin:0, padding:0 },
+  progressBar:{ height:8, borderRadius:4 },
+  resultCard:{ width:'90%', marginTop:20 },
+  title:{ fontWeight:'bold', marginTop:10 }
 });
 
 export default App;
