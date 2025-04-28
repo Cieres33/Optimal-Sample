@@ -1,5 +1,5 @@
 // optimal/app/(tabs)/index.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import {
   Provider as PaperProvider,
@@ -9,12 +9,15 @@ import {
   Card,
   DefaultTheme,
   List,
+  ProgressBar,
+  IconButton
 } from 'react-native-paper';
 
 import {
   runOptimalAlgorithm,
   validateParams,
   randomParams,
+  ProgressData
 } from '../services/optimalService';
 
 import { Params, Result } from '../../src/optimal';
@@ -32,6 +35,15 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
   const [result,  setResult]  = useState<Result | null>(null);
+  
+  // 新增进度状态
+  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState<string>('');
+  const [timeRemaining, setTimeRemaining] = useState<number | undefined>(undefined);
+  const [showProgress, setShowProgress] = useState(false);
+  
+  // 取消令牌
+  const cancelTokenRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
 
   /* ------- 主题 ------- */
   const theme = {
@@ -44,10 +56,27 @@ export default function App() {
     if (/^\d*$/.test(value)) setForm(f => ({ ...f, [key]: value }));
   };
 
+  // 取消计算
+  const handleCancel = () => {
+    if (cancelTokenRef.current) {
+      cancelTokenRef.current.isCancelled = true;
+      setLoading(false);
+      setShowProgress(false);
+      setError('计算已取消');
+    }
+  };
+
   /** 点击 EXECUTE */
   const onExecute = async () => {
     setError(null);
     setResult(null);
+    setProgress(0);
+    setPhase('');
+    setTimeRemaining(undefined);
+    setShowProgress(false);
+    
+    // 重置取消令牌
+    cancelTokenRef.current = { isCancelled: false };
 
     /* 1. 收集 / 生成参数 ------------------------------------ */
     let params: Params;
@@ -77,12 +106,34 @@ export default function App() {
     /* 3. 调用算法 ----------------------------------------- */
     try {
       setLoading(true);
-      const r = await runOptimalAlgorithm(params);
-      setResult(r);
+      setTimeout(() => {
+        if (loading && !result) {
+          setShowProgress(true);
+        }
+      }, 500);
+
+      const r = await runOptimalAlgorithm(
+        params,
+        (progressData: ProgressData) => {
+          console.log('Progress update:', progressData); // 保留调试信息
+          // 立即更新UI状态
+          setProgress(progressData.totalProgress);
+          setPhase(progressData.phase);
+          setTimeRemaining(progressData.timeRemaining);
+        },
+        cancelTokenRef.current
+      );
+      
+      if (!cancelTokenRef.current.isCancelled) {
+        setResult(r);
+      }
     } catch (e: any) {
-      setError(e.message || '执行失败');
+      if (!cancelTokenRef.current.isCancelled) {
+        setError(e.message || '执行失败');
+      }
     } finally {
       setLoading(false);
+      setShowProgress(false);
     }
   };
 
@@ -127,11 +178,58 @@ export default function App() {
             style={[styles.button, styles.executeButton]}
             mode="contained"
             onPress={onExecute}
-            loading={loading}
+            loading={loading && !showProgress} // 只在未显示进度条时显示按钮loading
             disabled={loading}
           >
-            {loading ? '计算中…' : 'Execute'}
+            {loading && !showProgress ? '计算中…' : 'Execute'}
           </Button>
+
+          {/* 进度显示 */}
+          {loading && (
+            <Card style={styles.progressCard}>
+              <Card.Content>
+                {progress > 0 ? (
+                  <>
+                    <View style={styles.progressHeader}>
+                      <View style={styles.progressInfo}>
+                        <Text style={styles.progressTitle}>
+                          当前阶段: {
+                            phase === 'greedy' ? '贪心覆盖' : 
+                            phase === 'local' ? '局部搜索' : 
+                            phase === 'annealing' ? '模拟退火' : '初始化'
+                          }
+                        </Text>
+                        <Text style={styles.progressSubtitle}>
+                          {Math.round(progress * 100)}% 完成
+                          {timeRemaining !== undefined && (
+                            <>
+                              {' · '}预计剩余: {
+                                timeRemaining < 1000 ? '即将完成' : 
+                                `${Math.round(timeRemaining / 1000)} 秒`
+                              }
+                            </>
+                          )}
+                        </Text>
+                      </View>
+                      <IconButton
+                        icon="close-circle"
+                        size={24}
+                        onPress={handleCancel}
+                        style={styles.cancelButton}
+                      />
+                    </View>
+                    <ProgressBar 
+                      progress={progress || 0.01}
+                      style={styles.progressBar} 
+                      color={theme.colors.primary}
+                    />
+                  </>
+                ) : (
+                  <Text style={{textAlign: 'center'}}>计算中...</Text>
+                )}
+              </Card.Content>
+            </Card>
+          )}
 
           {/* 结果 */}
           {result && (
@@ -174,4 +272,17 @@ const styles = StyleSheet.create({
   errorText: { color: '#D32F2F' },
   resultCard: { width: '90%', marginTop: 20 },
   title: { fontWeight: 'bold', marginTop: 10 },
+  // 新增样式
+  progressCard: { width: '90%', marginVertical: 15, backgroundColor: '#F5F5F5' },
+  progressBar: { height: 8, marginTop: 10, borderRadius: 4 },
+  progressHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8
+  },
+  progressInfo: { flex: 1 },
+  progressTitle: { fontWeight: 'bold', fontSize: 14 },
+  progressSubtitle: { marginTop: 4, fontSize: 12, color: '#757575' },
+  cancelButton: { margin: 0, padding: 0 }
 });
