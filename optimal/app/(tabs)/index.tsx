@@ -30,6 +30,7 @@ import {
 
 export default function app(){
     const [isCustom, setIsCustom] = useState(false);
+    const [userInput, setUserInput] = useState('');
     const [m, setM] = React.useState('45');
     const [n, setN] = React.useState('8');
     const [k, setK] = React.useState('6');
@@ -85,7 +86,7 @@ export default function app(){
                     icon="alert-circle">
                     {snackbarMessage}
                 </Banner>
-                <SegmentedButtons style={{paddingBottom: 20, flex: 1}}
+                <SegmentedButtons style={{paddingBottom: 20}}
                     value={isCustom ? 'custom' : 'random'}
                     onValueChange={value => {
                         setIsCustom(value === 'custom');
@@ -103,6 +104,19 @@ export default function app(){
                         { value: 'random', label: 'Random' },
                         { value: 'custom', label: 'Custom' },
                     ]}/>
+                <View style={styles.row}>
+                    <TextInput
+                        mode="outlined"
+                        label="Sample Pool"
+                        value={userInput}
+                        onChangeText={text => {setUserInput(text)}}
+                        keyboardType='numeric'
+                        multiline={true}
+                        numberOfLines={4}
+                        style={styles.textInput}
+                        disabled={!isCustom}/>
+                    <Text style={styles.desc}>Custom Pool</Text>
+                </View>
                 <View style={styles.row}>
                     <TextInput
                         mode="outlined"
