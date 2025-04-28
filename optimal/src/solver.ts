@@ -1,22 +1,14 @@
-import { kComb, C} from "./comb";
+import { kComb } from "./comb";
 import { BitSet } from "./bitset";
 
 export function greedyCover(
   n: number, k: number, j: number, s: number, minSGroups: number,
-  pool: number[], deadline: number,
-  onProgress?: (progress: number, iteration?: number, total?: number) => void
+  pool: number[], deadline: number
 ): number[][] {
-  if (onProgress) onProgress(0.01, 0, 100); // 确保有初始进度显示
   const jSets = [...kComb(n, j)];
   const U = jSets.length;
   const kSets: number[][] = [];
   const bits: BitSet[] = [];
-
-
-  // 计算组合总数用于进度估计
-  const totalCombinations = C(n, k);
-  let processedCombinations = 0;
-  
   
   // 生成全部 k-子集
   for (const ks of kComb(n, k)) {
@@ -46,22 +38,12 @@ export function greedyCover(
     }
     
     kSets.push(ks); bits.push(b);
-
-    processedCombinations++;
-    if (onProgress && processedCombinations % 5 === 0) {
-      onProgress(Math.min(0.8, processedCombinations / totalCombinations), 
-                processedCombinations, totalCombinations);
-    }
   }
   
   // 记录每个j样本组被覆盖的次数
   const coverCounts = new Array(U).fill(0);
   const sol: number[][] = [];
   let satisfied = false;
-
-  // 贪心算法迭代次数
-  let currentIteration = 0;
-
   
   // 改进的贪心算法 - 使用更优的启发式函数
   while (!satisfied && sol.length < kSets.length) {
@@ -113,15 +95,6 @@ export function greedyCover(
     kSets.splice(best, 1);
   }
 
-
-    // 更新进度
-    currentIteration++;
-    if (onProgress) {
-      onProgress(0.8 + 0.2 * Math.min(1, currentIteration / (kSets.length + currentIteration)), 
-                currentIteration, kSets.length + currentIteration);
-    }
-  
-
   if (!satisfied && s === j) {
     // 对仍未覆盖的 j-组，逐个找能覆盖它们的 k-组补齐
     for (let u = 0; u < U && !satisfied; u++) {
@@ -151,8 +124,7 @@ export function greedyCover(
 /* 改进的局部搜索 */
 export function localSearch(
   groups: number[][], pool: number[],
-  n: number, j: number, s: number, minSGroups: number, deadline: number,
-  onProgress?: (progress: number, iteration?: number, total?: number) => void
+  n: number, j: number, s: number, minSGroups: number, deadline: number
 ): number[][] {
   const jSets = [...kComb(n, j)];
   
@@ -185,26 +157,20 @@ export function localSearch(
   };
 
   let improved = true;
-  let iteration = 0;
-  const maxIterations = groups.length * 2; // 估计的最大迭代次数
   while (improved && Date.now() < deadline) {
     improved = false;
-    iteration++;
     
     // 基础优化：尝试删除一个组
     for (let i = 0; i < groups.length; i++) {
       const test = groups.slice(0, i).concat(groups.slice(i + 1));
-      if (covered(test)) { 
-        groups = test; 
-        improved = true; 
-        break; 
-      }
-      
-      // 每处理几个组报告一次进度
-      if (onProgress && i % 2 === 0) {
-        onProgress(Math.min(1, iteration / maxIterations), iteration, maxIterations);
-      }
+      if (covered(test)) { groups = test; improved = true; break; }
     }
+    
+    // 添加更强大的局部搜索：替换优化
+
+      // 这里可以实现替换搜索...
+      // 由于复杂度原因，暂不实现完整替换搜索
+    
   }
   
   return groups;
@@ -215,8 +181,7 @@ export function localSearch(
 export function simulatedAnnealing(
   initialGroups: number[][], pool: number[],
   n: number, j: number, s: number, k: number, minSGroups: number, 
-  deadline: number,
-  onProgress?: (progress: number, iteration?: number, total?: number) => void
+  deadline: number
 ): number[][] {
   const jSets = [...kComb(n, j)];
   
@@ -316,11 +281,6 @@ export function simulatedAnnealing(
           bestSolution = [...newSolution];
         }
       }
-    }
-
-    if (onProgress && iterations % 10 === 0) {
-      const progressValue = Math.min(1, iterations / MAX_ITERATIONS);
-      onProgress(progressValue, iterations, MAX_ITERATIONS);
     }
     
     // 降温

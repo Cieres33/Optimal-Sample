@@ -9,8 +9,6 @@ import {
   Card,
   DefaultTheme,
   List,
-  ProgressBar,
-  IconButton,
   SegmentedButtons
 } from 'react-native-paper';
 
@@ -18,7 +16,6 @@ import {
   runOptimalAlgorithm,
   validateParams,
   randomParams,
-  ProgressData
 } from '../services/optimalService';
 
 import { Params, Result } from '../../src/optimal';
@@ -38,14 +35,6 @@ const App = () => {
   const [error,   setError]   = useState<string | null>(null);
   const [result,  setResult]  = useState<Result | null>(null);
 
-  // 进度状态
-  const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<string>('');
-  const [timeRemaining, setTimeRemaining] = useState<number|undefined>(undefined);
-  const [showProgress, setShowProgress] = useState(false);
-
-  // 取消令牌
-  const cancelTokenRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
 
   /* ------- 主题 ------- */
   const customTheme = {
@@ -81,23 +70,12 @@ const App = () => {
     setIsCustom(false);
   }
 
-  // 取消计算
-  const handleCancel = () => {
-    cancelTokenRef.current.isCancelled = true;
-    setLoading(false);
-    setShowProgress(false);
-    setError('计算已取消');
-  };
+
 
   /** 点击 Execute */
   const onExecute = async () => {
     setError(null);
     setResult(null);
-    setProgress(0);
-    setPhase('');
-    setTimeRemaining(undefined);
-    setShowProgress(false);
-    cancelTokenRef.current = { isCancelled: false };
 
     // 1. 收集参数
     let params: Params;
@@ -124,27 +102,15 @@ const App = () => {
     if (errMsg) { setError(errMsg); return; }
 
     // 3. 调用算法
+    /* 3. 调用算法 ----------------------------------------- */
     try {
       setLoading(true);
-      setTimeout(() => {
-        if (loading && !result) setShowProgress(true);
-      }, 500);
-
-      const r = await runOptimalAlgorithm(
-        params,
-        (pd: ProgressData) => {
-          setProgress(pd.totalProgress);
-          setPhase(pd.phase);
-          setTimeRemaining(pd.timeRemaining);
-        },
-        cancelTokenRef.current
-      );
-      if (!cancelTokenRef.current.isCancelled) setResult(r);
+      const r = await runOptimalAlgorithm(params);
+      setResult(r);
     } catch (e: any) {
-      if (!cancelTokenRef.current.isCancelled) setError(e.message || '执行失败');
+      setError(e.message || '执行失败');
     } finally {
       setLoading(false);
-      setShowProgress(false);
     }
   };
 
@@ -207,48 +173,11 @@ const App = () => {
             style={styles.button}
             mode="contained"
             onPress={onExecute}
-            loading={loading && !showProgress}
+            loading={loading}
             disabled={loading}
           >
-            {loading && !showProgress ? '计算中…' : 'Execute'}
+            {loading ? '计算中…' : 'Execute'}
           </Button>
-
-          {/* 进度卡片 */}
-          {loading && showProgress && (
-            <Card style={styles.progressCard}>
-              <Card.Content>
-                <View style={styles.progressHeader}>
-                  <View style={styles.progressInfo}>
-                    <Text style={styles.progressTitle}>
-                      阶段: {
-                        phase==='greedy'?'贪心':
-                        phase==='local'?'局部':'模拟退火'
-                      }
-                    </Text>
-                    <Text style={styles.progressSubtitle}>
-                      {Math.round(progress*100)}% 完成
-                      {timeRemaining!=null && (
-                        <> · 预计: {
-                          timeRemaining<1000?'即将':`${Math.round(timeRemaining/1000)}s`
-                        }</>
-                      )}
-                    </Text>
-                  </View>
-                  <IconButton
-                    icon="close-circle"
-                    size={24}
-                    onPress={handleCancel}
-                    style={styles.cancelButton}
-                  />
-                </View>
-                <ProgressBar
-                  progress={progress||0.01}
-                  style={styles.progressBar}
-                  color={customTheme.colors.primary}
-                />
-              </Card.Content>
-            </Card>
-          )}
 
           {/* 结果展示 */}
           {result && (
