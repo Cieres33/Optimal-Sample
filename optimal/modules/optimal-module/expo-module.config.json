@@ -1,0 +1,15 @@
+{
+  "platforms": [
+    "android"
+  ],
+  "apple": {
+    "modules": [
+      "OptimalModule"
+    ]
+  },
+  "android": {
+    "modules": [
+      "expo.modules.optimalmodule.OptimalModule"
+    ]
+  }
+}

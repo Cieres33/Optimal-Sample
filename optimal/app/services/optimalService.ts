@@ -1,5 +1,34 @@
 // optimal/app/services/optimalService.ts
-import { solve, Params, Result } from '../../src/optimal';
+import {  Params, Result } from '../../src/optimal';
+import  OptimalModule  from '@/modules/optimal-module'
+
+export function validateParam(type:string,param1:string,param2?:string): boolean{
+  switch(type){
+    case 'm':
+      if (parseInt(param1) < 45 || parseInt(param1) > 54) return false;
+      break;
+    case 'n':
+      if (parseInt(param1) < 7 || parseInt(param1) > 25) return false;
+      break;
+    case 'k':
+      if (parseInt(param1) < 4 || parseInt(param1) > 7) return false;
+      break;
+    case 'j':
+      if (param2){
+        if (parseInt(param1) > parseInt(param2)) return false;
+      }
+      break;
+    case 's':
+      if(param2){
+        if (parseInt(param1) > parseInt(param2)) return false;
+      }
+      else return false;
+      break;
+    default:
+      return true;
+  }
+  return false;
+}
 
 /** 参数校验——不合法返回字符串错误信息；合法则返回 null */
 export function validateParams(p: Params): string | null {
@@ -27,7 +56,6 @@ export function randomParams(): Params {
 export async function runOptimalAlgorithm(params: Params): Promise<Result> {
   const error = validateParams(params);
   if (error) throw new Error(error);
-
-  const timeoutMs = 30_000; // 30 s
-  return solve({ ...params, minSGroups: 1, toLabel: true, timeoutMs });
+  return await OptimalModule.solve(params);
 }
+
