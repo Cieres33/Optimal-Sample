@@ -18,6 +18,7 @@ import {
     runOptimalAlgorithm,
     validateParams,
     randomParams,
+    getRunCount,
 } from '../services/optimalService';
 
 import { Result } from '../../src/optimal';
@@ -42,7 +43,6 @@ export default function app(){
     const [storeLoading, setStoreLoading] = React.useState(false);
     const [snackbarVisible, setSnackbarVisible] = React.useState(false);
     const [snackbarMessage, setSnackbarMessage] = React.useState('');
-    const [runCount, setRunCount] = React.useState(0);
     const showSnackbar = (message: string) => {
         setSnackbarMessage(message);
         setSnackbarVisible(true);
@@ -60,7 +60,7 @@ export default function app(){
                     j: parseInt(j),
                     s: parseInt(s)
                     };
-                    await saveToDatabase(params, result, runCount);
+                    await saveToDatabase(params, result, await getRunCount(params));
                     showSnackbar('Result saved successfully!');
                     } catch (e) {
                         console.error('Failed to save result!', e);
@@ -296,8 +296,4 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 10,
     },
-
-
-
-
 });
