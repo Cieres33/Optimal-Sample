@@ -10,7 +10,8 @@ import {
   DefaultTheme,
   List,
   ProgressBar,
-  IconButton
+  IconButton,
+  SegmentedButtons
 } from 'react-native-paper';
 
 import {
@@ -22,9 +23,12 @@ import {
 
 import { Params, Result } from '../../src/optimal';
 
-export default function App() {
+const App = () => {
   /* ------- UI 状态 ------- */
   const [isCustom, setIsCustom] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [value, setValue] = useState('random');
+  const toggleVisibility = () => setIsVisible(!isVisible);
   const [form, setForm] = useState({
     m: '45',
     n: '8',
@@ -46,12 +50,32 @@ export default function App() {
   const cancelTokenRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
 
   /* ------- 主题 ------- */
-  const theme = {
+  const customTheme = {
     ...DefaultTheme,
-    colors: { ...DefaultTheme.colors, primary: '#2196F3' },
+    colors: {
+      ...DefaultTheme.colors,
+      primary: '#2196F3',      // 聚焦时边框颜色
+      text: '#37474F',         // 输入文字颜色
+      placeholder: '#BDBDBD',  // 占位符颜色
+      background: '#FFFFFF',   // 输入框背景色
+      surface: '#F5F5F5'       // 未聚焦边框颜色（需要特殊处理）
+    },
+  };
+  const handleInputChange = (text: string, part: string) => {
+    setForm(prev => ({
+      ...prev,
+      [part]: text
+    }));
   };
 
-  /* ------- 处理函数 ------- */
+  function handleCustomMode() {
+    toggleVisibility()
+  }
+
+  function handleRandomMode() {
+    toggleVisibility()
+  }
+  
   const setField = (key: keyof typeof form, value: string) => {
     if (/^\d*$/.test(value)) setForm(f => ({ ...f, [key]: value }));
   };
@@ -137,24 +161,44 @@ export default function App() {
     }
   };
 
-  /* ------- 渲染 ------- */
-  return (
-    <PaperProvider theme={theme}>
-      <ScrollView>
-        <View style={styles.container}>
 
-          {/* 模式切换 */}
-          <Button style={styles.button} mode="contained" onPress={() => setIsCustom(!isCustom)}>
-            {isCustom ? 'Custom' : 'Random'}
-          </Button>
+  return (
+    <PaperProvider theme={customTheme}>
+      <ScrollView>
+      <View style={styles.container}>
+        {/* 显示/隐藏控制按钮 */}
+        <SegmentedButtons
+          value={value}
+          onValueChange={(newValue) => {
+            setValue(newValue); // 必须保留的value更新
+            // 这里可以添加自定义点击逻辑
+            console.log('当前选中:', newValue);
+            if(newValue === 'custom') handleCustomMode();
+            if(newValue === 'random') handleRandomMode();
+          }}
+          buttons={[
+            {
+              value: 'custom',
+              label: 'custom',
+              style: value === 'custom' ? styles.activeSegment : styles.inactiveSegment
+            },
+            {
+              value: 'random',
+              label: 'random',
+              style: value === 'random' ? styles.activeSegment : styles.inactiveSegment
+            },
+          ]}
+          style={styles.segmentGroup}
+        />
 
           {/* 参数输入 */}
+          {isVisible && (
           <View style={styles.inputGroup}>
             {(['m', 'n', 'k', 'j', 's'] as const).map(key => (
               <React.Fragment key={key}>
                 <TextInput
                   mode="outlined"
-                  style={styles.input}
+                  style={styles.shortInput}
                   placeholder={key}
                   maxLength={3}
                   value={form[key]}
@@ -165,6 +209,7 @@ export default function App() {
               </React.Fragment>
             ))}
           </View>
+          )}
 
           {/* 错误提示 */}
           {error && (
@@ -175,7 +220,7 @@ export default function App() {
 
           {/* EXECUTE */}
           <Button
-            style={[styles.button, styles.executeButton]}
+            style={[styles.button]}
             mode="contained"
             onPress={onExecute}
             loading={loading && !showProgress} // 只在未显示进度条时显示按钮loading
@@ -221,7 +266,7 @@ export default function App() {
                     <ProgressBar 
                       progress={progress || 0.01}
                       style={styles.progressBar} 
-                      color={theme.colors.primary}
+                      color={customTheme.colors.primary}
                     />
                   </>
                 ) : (
@@ -262,12 +307,43 @@ export default function App() {
 
 /* ------- 样式 ------- */
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', padding: 20, paddingTop: 60 },
-  button:    { width: 200, marginBottom: 20 },
-  executeButton: { backgroundColor: '#4CAF50', marginTop: 10 },
-  inputGroup: { flexDirection: 'row', alignItems: 'center' },
-  input: { width: 45, height: 40, textAlignVertical: 'center', paddingVertical: 0 },
-  dash: { fontSize: 20, lineHeight: 40, marginHorizontal: 4 },
+  container: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 300
+  },
+  segmentGroup: {
+    width: 200,
+    marginBottom: 20,
+  },
+  activeSegment: {
+    backgroundColor: '#2196F3',
+  },
+  inactiveSegment: {
+    backgroundColor: '#F5F5F5',
+  },
+  inactiveText: {
+    color: '#37474F',
+  },
+  inputGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', // 允许换行
+    justifyContent: 'center',
+    padding: 10
+  },
+  shortInput: {
+    width: 40,
+    height: 40,
+    textAlignVertical: 'center', // 垂直居中（Android）
+    paddingVertical: 0           // 清除默认垂直 padding
+  },
+  dash: {
+    fontSize: 20,
+    lineHeight: 40,
+    marginHorizontal: 5
+  },
   errorCard: { backgroundColor: '#FFEBEE', width: '90%', marginTop: 10 },
   errorText: { color: '#D32F2F' },
   resultCard: { width: '90%', marginTop: 20 },
@@ -284,5 +360,8 @@ const styles = StyleSheet.create({
   progressInfo: { flex: 1 },
   progressTitle: { fontWeight: 'bold', fontSize: 14 },
   progressSubtitle: { marginTop: 4, fontSize: 12, color: '#757575' },
-  cancelButton: { margin: 0, padding: 0 }
+  cancelButton: { margin: 0, padding: 0 },
+  button:    { width: 200, marginBottom: 20 },
 });
+
+export default App;
