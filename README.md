@@ -25,3 +25,17 @@ npx ts-node test.ts
 - 目前src文件夹内的是极度精简后的代码，默认只用贪心算法和局部搜索，测试下来依旧可以完成目标（n<=22时）。
 - 如果想优化、检查算法相关，可以看'slove.ts'里为内部实现，'bitset.ts'里是位集5相关内容。'index.ts' 是主入口。
 - otheTry是算法的特殊版本，即未精简前的代码，约800行。使用了更多算法如近似、剪枝等，目前优化目标是将精简版性能优化，但不至于臃肿到原版800行。
+
+## APP
+
+APP is located in the `optimal` folder. To run the app, navigate to the `optimal` directory and run the following command:
+
+```bash
+npm install
+npx expo start
+```
+
+### Building the app
+```bash
+npx expo run:android
+```
