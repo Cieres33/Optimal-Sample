@@ -1,0 +1,33 @@
+// optimal/app/services/optimalService.ts
+import { solve, Params, Result } from '../../src/optimal';
+
+/** 参数校验——不合法返回字符串错误信息；合法则返回 null */
+export function validateParams(p: Params): string | null {
+  const { m, n, k, j, s } = p;
+  if (m < 45 || m > 54) return 'm 必须在 45–54 之间';
+  if (n < 7  || n > 25) return 'n 必须在 7–25 之间';
+  if (k < 4  || k > 7)  return 'k 必须在 4–7 之间';
+  if (j > k)            return 'j 不能大于 k';
+  if (s > j)            return 's 不能大于 j';
+  if (s < 3  || s > 7)  return 's 必须在 3–7 之间';
+  return null;
+}
+
+/** 生成一组随机且合法的参数（Random 模式用） */
+export function randomParams(): Params {
+  const m = 45 + Math.floor(Math.random() * 10);   // 45–54
+  const n = 7  + Math.floor(Math.random() * 19);   // 7–25
+  const k = 4  + Math.floor(Math.random() * 4);    // 4–7
+  const j = Math.min(k, 3 + Math.floor(Math.random() * 5)); // ≤ k
+  const s = Math.min(j, 3 + Math.floor(Math.random() * 5)); // ≤ j
+  return { m, n, k, j, s };
+}
+
+/** 封装算法调用（异步是为了以后好迁移到 worker） */
+export async function runOptimalAlgorithm(params: Params): Promise<Result> {
+  const error = validateParams(params);
+  if (error) throw new Error(error);
+
+  const timeoutMs = 30_000; // 30 s
+  return solve({ ...params, minSGroups: 1, toLabel: true, timeoutMs });
+}
