@@ -152,15 +152,6 @@ export default function app(){
                     value={isCustom ? 'custom' : 'random'}
                     onValueChange={value => {
                         setIsCustom(value === 'custom');
-                        if (value === 'random') {
-                            const params = randomParams();
-                            setM(params.m.toString());
-                            setN(params.n.toString());
-                            setK(params.k.toString());
-                            setJ(params.j.toString());
-                            setS(params.s.toString());
-                            setMinGroup('1');
-                        }
                     }}
                     buttons={[
                         { value: 'random', label: 'Random' },
@@ -190,7 +181,6 @@ export default function app(){
                         keyboardType="numeric"
                         maxLength={2}
                         style={styles.textInput}
-                        disabled={!isCustom}
                     />
                     <Text style={styles.desc}>45≤m≤54</Text>
                 </View>
@@ -203,7 +193,6 @@ export default function app(){
                         keyboardType="numeric"
                         maxLength={2}
                         style={styles.textInput}
-                        disabled={!isCustom}
                     />
                     <Text style={styles.desc}>7≤n≤25</Text>
                 </View>
@@ -216,7 +205,6 @@ export default function app(){
                         keyboardType="numeric"
                         maxLength={2}
                         style={styles.textInput}
-                        disabled={!isCustom}
                     />
                     <Text style={styles.desc}>4≤k≤7</Text>
                 </View>
@@ -229,7 +217,6 @@ export default function app(){
                         keyboardType="numeric"
                         maxLength={2}
                         style={styles.textInput}
-                        disabled={!isCustom}
                     />
                     <Text style={styles.desc}>j≤k</Text>
                 </View>
@@ -242,7 +229,6 @@ export default function app(){
                         keyboardType="numeric"
                         maxLength={2}
                         style={styles.textInput}
-                        disabled={!isCustom}
                     />
                     <Text style={styles.desc}>3≤s≤7</Text>
                 </View>
@@ -256,7 +242,6 @@ export default function app(){
                         keyboardType="numeric"
                         maxLength={1}
                         style={styles.textInput}
-                        disabled={!isCustom}
                     />
                     <Text style={styles.desc}>Sample</Text>
                 </View>
