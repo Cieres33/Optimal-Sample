@@ -19,6 +19,7 @@ import {
     validateParams,
     randomParams,
     getRunCount,
+    runOptimalAlgorithmCustom,
 } from '../services/optimalService';
 
 import { Result } from '../../src/optimal';
@@ -275,12 +276,18 @@ export default function app(){
                         setLoading(false);
                     } else {
                         try {
-                        const result = await runOptimalAlgorithm(params);
-                        setLoading(false);
-                        setResult(result);
-                        setShownResult(true);
-                        }
-                        catch (error) {
+                            if (isCustom && userInput.length > 0) {
+                                const result = await runOptimalAlgorithmCustom(params, userInput);
+                                setLoading(false);
+                                setResult(result);
+                                setShownResult(true);
+                            } else {
+                                const result = await runOptimalAlgorithm(params);
+                                setLoading(false);
+                                setResult(result);
+                                setShownResult(true);
+                            }
+                        } catch (error) {
                             console.error(error);
                         } finally {
                             setLoading(false);

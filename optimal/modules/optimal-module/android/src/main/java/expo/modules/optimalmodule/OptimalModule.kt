@@ -24,8 +24,18 @@ class OptimalModule : Module() {
         )
       }
     }
+    
+    AsyncFunction("solveWithPool") { params: Map<String, Any>, pool: List<Int> ->
+    try {
+      val paramsObj = convertToParams(params)
+      val result = Optimal.Companion.solve(paramsObj, pool)
+      convertResultToMap(result)
+    } catch (e: Exception) {
+      mapOf("error" to (e.message ?: "Unknown error"))
+    }
   }
-  
+}
+
   private fun convertToParams(params: Map<String, Any>): Optimal.Params {
     return Optimal.Params(
       m = (params["m"] as? Number)?.toInt() ?: 0,

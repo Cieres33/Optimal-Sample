@@ -56,7 +56,7 @@ export function randomParams(): Params {
 
 export async function getRunCount(params: Params): Promise<number> {
   const { m, n, k, j, s } = params;
-  
+
   const count = await recordsCollection.query(
     Q.where('m', m),
     Q.where('n', n),
@@ -64,7 +64,7 @@ export async function getRunCount(params: Params): Promise<number> {
     Q.where('j', j),
     Q.where('s', s)
   ).fetchCount();
-  
+
   return count + 1;
 }
 
@@ -75,3 +75,8 @@ export async function runOptimalAlgorithm(params: Params): Promise<Result> {
   return await OptimalModule.solve(params);
 }
 
+export async function runOptimalAlgorithmCustom(params: Params, pool:Number[] ): Promise<Result> {
+  const error = validateParams(params);
+  if (error) throw new Error(error);
+  return await OptimalModule.solveWithPool(params,pool);
+}

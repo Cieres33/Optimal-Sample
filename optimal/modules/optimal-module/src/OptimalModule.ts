@@ -37,6 +37,9 @@ export function solve(params: OptimalParams): Promise<OptimalResult> {
     params.timeoutMs || 60000
   );
 }
+export function solveWithPool(params: OptimalParams, pool: number[]): Promise<OptimalResult> {
+  return OptimalModule.solveWithPool(params, pool);
+}
 
 // 为了兼容性，也可以直接导出原生模块
 export default OptimalModule;
