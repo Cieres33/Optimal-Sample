@@ -46,7 +46,6 @@ export default function app(){
     const [storeLoading, setStoreLoading] = React.useState(false);
     const [snackbarVisible, setSnackbarVisible] = React.useState(false);
     const [snackbarMessage, setSnackbarMessage] = React.useState('');
-    console.log('userInput', userInput);
     // 格式化数字：个位数前加0
     const formatNumber = (num: number): string => {
         return num >= 0 && num < 10 ? `0${num}` : `${num}`;
