@@ -1,6 +1,5 @@
 // optimal/app/services/optimalService.ts
-import {  Params, Result } from '../../src/optimal';
-import  OptimalModule  from '@/modules/optimal-module'
+import {  Params, Result, solve, solveCustom } from '../../src/optimal';
 import { recordsCollection } from '../db';
 import { Q } from '@nozbe/watermelondb';
 
@@ -72,11 +71,15 @@ export async function getRunCount(params: Params): Promise<number> {
 export async function runOptimalAlgorithm(params: Params): Promise<Result> {
   const error = validateParams(params);
   if (error) throw new Error(error);
-  return await OptimalModule.solve(params);
+
+  const timeoutMs = 30_000; // 30 s
+  return solve({ ...params, minSGroups: 1, toLabel: true, timeoutMs });
 }
 
 export async function runOptimalAlgorithmCustom(params: Params, pool:Number[] ): Promise<Result> {
   const error = validateParams(params);
   if (error) throw new Error(error);
-  return await OptimalModule.solveWithPool(params,pool);
+
+  const timeoutMs = 30_000; // 30 s
+  return solveCustom({ ...params, minSGroups: 1, toLabel: true, timeoutMs }, pool);
 }

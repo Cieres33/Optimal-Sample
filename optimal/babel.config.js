@@ -9,7 +9,9 @@ module.exports = function(api) {
     ],
     plugins: [
       // 1. 装饰器支持（Legacy 模式）
-      ['@babel/plugin-proposal-decorators', { legacy: true }]
+      ['@babel/plugin-proposal-decorators', { legacy: true }],
+      ['@babel/plugin-transform-flow-strip-types'],
+      ['@babel/plugin-proposal-class-properties', {loose: true}],
     ],
   };
 };

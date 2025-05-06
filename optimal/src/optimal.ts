@@ -13,7 +13,7 @@ export interface Result {
 
 const randSample = (m: number, n: number, seed = Date.now()) => {
   let a = Array.from({ length: m }, (_, i) => i + 1);
-  for (let i = a.length - 1, r; i > 0; i--) {
+  for (let i = a.length - 1, r: number; i > 0; i--) {
     r = (seed = (seed * 16807) % 2147483647) % (i + 1);
     [a[i], a[r]] = [a[r], a[i]];
   }
@@ -69,6 +69,58 @@ export function solve(p: Params): Result {
     pool.forEach((num,i)=>map[num]=label(i+1));
     return {
       samplePool: pool.map(num=>map[num]),
+      groups: bestGroups.map(g=>g.map(num=>map[num])),
+      ms
+    };
+  }
+  return { samplePool: pool, groups: bestGroups, ms };
+}
+
+
+
+export function solveCustom(p: Params, pool: any[]): Result {
+  const {  n, k, j, s, minSGroups=1,  toLabel=false, timeoutMs=60_000 } = p;
+  if (n > 25 || k > 7) throw Error("beyond spec");
+
+  const t0 = Date.now(), deadline = t0 + timeoutMs;
+
+  // 先用贪心算法获得初始解
+  let bestGroups = greedyCover(n, k, j, s, minSGroups, pool, deadline);
+  
+  // 只对中小规模问题使用局部搜索
+  if (n <= 15) {
+    // 使用局部搜索优化
+    const localGroups = localSearch(bestGroups, pool, n, j, s, minSGroups, deadline);
+    bestGroups = localGroups;
+    
+    // 对于小规模问题，尝试模拟退火改进
+    if (n <= 9 && k <= 7) {
+      const remainingTime = deadline - Date.now();
+      
+      // 确保有足够时间运行模拟退火
+      if (remainingTime > 10000) {
+        try {
+          const saGroups = simulatedAnnealing(
+            bestGroups, pool, n, j, s, k, minSGroups, deadline
+          );
+          
+          // 只有当模拟退火找到更好解时才采用
+          if (saGroups.length < bestGroups.length) {
+            bestGroups = saGroups;
+          }
+        } catch (e) {
+          console.error("Simulated annealing failed:", e);
+        }
+      }
+    }
+  }
+
+  const ms = Date.now() - t0;
+  if (toLabel) {
+    const map: Record<number,string> = {};
+    pool.forEach((num: string | number,i: number)=>map[num]=label(i+1));
+    return {
+      samplePool: pool.map((num: string | number)=>map[num]),
       groups: bestGroups.map(g=>g.map(num=>map[num])),
       ms
     };
