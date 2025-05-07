@@ -4,25 +4,24 @@ import { Card, List, Divider, Button, ActivityIndicator, Text, Modal, Portal, Di
 
 import { database } from '../db';
 
-// 导入具体的模型类而不是通用Model
+
 import Record from '../db/models/Record';
 import Result from '../db/models/Result';
 import {  getRecordDetail, deleteRecord } from '../services/dbService';
 
-// 定义接口类型
+
 interface DetailData {
   samplePool: (string | number)[];
   groups: (string | number)[][];
 }
 
-// 定义返回类型接口
+
 interface RecordDetail {
   record: Record;
   result: Result;
 }
 
 export default function ExploreScreen() {
-  // 使用具体模型类型
   const [records, setRecords] = useState<Record[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [recordDetail, setRecordDetail] = useState<DetailData | null>(null);
@@ -30,7 +29,6 @@ export default function ExploreScreen() {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const theme = useTheme();
-  // 首次加载获取所有记录
   useEffect(() => {
     setLoading(true);
     const sub = database.collections.get<Record>('records').query().observe().subscribe(setRecords)
@@ -38,7 +36,6 @@ export default function ExploreScreen() {
     return () => sub.unsubscribe();
   }, []);
 
-  // 查看记录详情
   const handleViewRecord = async (recordId: string) => {
     try {
       setDetailLoading(true);
@@ -60,7 +57,6 @@ export default function ExploreScreen() {
     if (!selectedRecord) return;
 
     try {
-      // 确认对话框
       Alert.alert(
         "Delete Confirmation",
         "Are you sure you want to delete this record?",
@@ -71,7 +67,7 @@ export default function ExploreScreen() {
             style: "destructive",
             onPress: async () => {
               await deleteRecord(selectedRecord.id);
-              handleBack(); // 返回列表
+              handleBack(); 
             }
           }
         ]
@@ -82,14 +78,12 @@ export default function ExploreScreen() {
     }
   };
 
-  // 返回记录列表
   const handleBack = () => {
     setModalVisible(false);
     setSelectedRecord(null);
     setRecordDetail(null);
   };
 
-  // 渲染记录详情界面
   const renderRecordDetail = () => {
     if (!selectedRecord || !recordDetail) return null;
     
@@ -156,7 +150,6 @@ export default function ExploreScreen() {
     <PaperProvider>
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
-          {/* 按钮容器 */}
           <View style={styles.buttonContainer}>
           </View>
           
@@ -181,7 +174,6 @@ export default function ExploreScreen() {
             </Card>
           )}
           
-          {/* 渲染模态框 */}
           {renderRecordDetail()}
         </ScrollView>
       </SafeAreaView>
@@ -190,7 +182,6 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  // 保留原有样式...
   modalContainer: {
     margin: 20,
   },

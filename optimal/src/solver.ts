@@ -144,14 +144,17 @@ export function localSearch(
     
     for (let i = 0; i < groups.length; i++) {
       const test = groups.slice(0, i).concat(groups.slice(i + 1));
-      if (covered(test)) { groups = test; improved = true; break; }
+      if (covered(test)) { 
+        groups = test; 
+        improved = true; 
+        break; }
     }
     
     
   }
   
   return groups;
-}2
+}
 
 export function simulatedAnnealing(
   initialGroups: number[][], pool: number[],
@@ -256,3 +259,7 @@ function arraysEqual(a: number[], b: number[]): boolean {
   const sortedB = [...b].sort((x, y) => x - y);
   return sortedA.every((val, idx) => val === sortedB[idx]);
 }
+
+
+
+
