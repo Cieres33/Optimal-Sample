@@ -5,7 +5,6 @@ import { Params, Result as AlgorithmResult } from '../../src/optimal';
 import Record from '../db/models/Record';
 import Result from '../db/models/Result';
 
-// 获取所有历史记录
 export async function getAllRecords(): Promise<Record[]> {
   const runsCollection = database.collections.get<Record>('records');
   if (!runsCollection) {
@@ -16,7 +15,7 @@ export async function getAllRecords(): Promise<Record[]> {
   return runsCollection.query().fetch();
 }
 
-// 获取记录详情
+
 export async function getRecordDetail(recordId: string): Promise<{record: Record, result: Result}> {
   const record = await database.collections.get<Record>('records').find(recordId);
   
@@ -41,9 +40,8 @@ export async function storeResult(
 ): Promise<string> {
   let recordId = '';
 
-  // 1) 把所有写入操作包到 database.write() 中
+
   await database.write(async () => {
-    // 创建主记录
     const record = await database.collections
       .get<Record>('records')
       .create(rec => {
@@ -58,10 +56,8 @@ export async function storeResult(
         rec.createdAt = new Date();
       });
 
-    // 记下 ID，以便最后返回
     recordId = record.id;
 
-    // 创建关联结果
     await database.collections
       .get<Result>('results')
       .create(res => {
@@ -79,21 +75,18 @@ export async function deleteRecord(recordId: string): Promise<void> {
     const recordsCollection = database.collections.get<Record>('records');
     const resultsCollection = database.collections.get<Result>('results');
 
-    // 获取要删除的记录
     const record = await recordsCollection.find(recordId);
 
-    // 级联删除关联结果
     const relatedResults = await resultsCollection.query(
       Q.where('record_id', recordId)
     ).fetch();
 
     await database.write(async () => {
-      // 使用Promise.all并行删除关联结果
       await Promise.all(
         relatedResults.map(result => result.destroyPermanently())
       );
       
-      // 删除主记录
+
       await record.destroyPermanently();
     });
 
@@ -103,18 +96,15 @@ export async function deleteRecord(recordId: string): Promise<void> {
     throw new Error('删除记录失败');
   }
 }
-// 清除所有记录 (慎用)（不使用 .action）
 export async function clearAllRecords() {
   const recordsCollection = database.collections.get<Record>('records');
   const resultsCollection = database.collections.get<Result>('results');
 
-  // 删除所有结果
   const results = await resultsCollection.query().fetch();
   for (const result of results) {
     await result.destroyPermanently();
   }
 
-  // 删除所有记录
   const records = await recordsCollection.query().fetch();
   for (const record of records) {
     await record.destroyPermanently();

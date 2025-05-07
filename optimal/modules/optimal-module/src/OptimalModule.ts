@@ -1,6 +1,5 @@
 import { requireNativeModule } from 'expo-modules-core';
 
-// 定义参数接口
 export interface OptimalParams {
   m: number;
   n: number;
@@ -13,17 +12,15 @@ export interface OptimalParams {
   timeoutMs?: number;
 }
 
-// 定义结果接口
 export interface OptimalResult {
   samplePool: Array<number | string>;
   groups: Array<Array<number | string>>;
   ms: number;
 }
 
-// 导入原生模块
+
 const OptimalModule = requireNativeModule('OptimalModule');
 
-// 导出原生函数的包装
 export function solve(params: OptimalParams): Promise<OptimalResult> {
   return OptimalModule.solve(
     params.m,
@@ -41,5 +38,4 @@ export function solveWithPool(params: OptimalParams, pool: number[]): Promise<Op
   return OptimalModule.solveWithPool(params, pool);
 }
 
-// 为了兼容性，也可以直接导出原生模块
 export default OptimalModule;

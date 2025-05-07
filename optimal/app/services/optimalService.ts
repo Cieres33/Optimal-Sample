@@ -1,4 +1,3 @@
-// optimal/app/services/optimalService.ts
 import {  Params, Result } from '../../src/optimal';
 import  OptimalModule  from '@/modules/optimal-module'
 import { recordsCollection } from '../db';
@@ -32,7 +31,6 @@ export function validateParam(type:string,param1:string,param2?:string): boolean
   return false;
 }
 
-/** 参数校验——不合法返回字符串错误信息；合法则返回 null */
 export function validateParams(p: Params): string | null {
   const { m, n, k, j, s } = p;
   if (m < 45 || m > 54) return 'm 必须在 45–54 之间';
@@ -44,13 +42,12 @@ export function validateParams(p: Params): string | null {
   return null;
 }
 
-/** 生成一组随机且合法的参数（Random 模式用） */
 export function randomParams(): Params {
-  const m = 45 + Math.floor(Math.random() * 10);   // 45–54
-  const n = 7  + Math.floor(Math.random() * 19);   // 7–25
-  const k = 4  + Math.floor(Math.random() * 4);    // 4–7
-  const j = Math.min(k, 3 + Math.floor(Math.random() * 5)); // ≤ k
-  const s = Math.min(j, 3 + Math.floor(Math.random() * 5)); // ≤ j
+  const m = 45 + Math.floor(Math.random() * 10);   
+  const n = 7  + Math.floor(Math.random() * 19);   
+  const k = 4  + Math.floor(Math.random() * 4);    
+  const j = Math.min(k, 3 + Math.floor(Math.random() * 5)); 
+  const s = Math.min(j, 3 + Math.floor(Math.random() * 5)); 
   return { m, n, k, j, s };
 }
 
@@ -68,7 +65,6 @@ export async function getRunCount(params: Params): Promise<number> {
   return count + 1;
 }
 
-/** 封装算法调用（异步是为了以后好迁移到 worker） */
 export async function runOptimalAlgorithm(params: Params): Promise<Result> {
   const error = validateParams(params);
   if (error) throw new Error(error);

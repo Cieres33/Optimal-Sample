@@ -1,11 +1,10 @@
-// optimal/app/database/models/Record.ts - 修改后
 import { Model } from '@nozbe/watermelondb'
 import { field, date, children } from '@nozbe/watermelondb/decorators'
 
 export default class Record extends Model {
   static table = 'records'
   
-  // 使用正确的关联定义方式
+
   static associations = {
     results: { type: 'has_many' as const, foreignKey: 'record_id' }
   }

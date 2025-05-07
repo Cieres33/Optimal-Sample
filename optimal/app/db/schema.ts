@@ -1,4 +1,3 @@
-// optimal/app/database/schema.ts
 import { appSchema, tableSchema } from '@nozbe/watermelondb'
 
 export default appSchema({
@@ -22,8 +21,8 @@ export default appSchema({
       name: 'results',
       columns: [
         { name: 'record_id', type: 'string', isIndexed: true },
-        { name: 'sample_pool', type: 'string' }, // JSON字符串
-        { name: 'groups', type: 'string' }, // JSON字符串
+        { name: 'sample_pool', type: 'string' }, 
+        { name: 'groups', type: 'string' }, 
       ]
     })
   ]

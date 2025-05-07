@@ -46,27 +46,24 @@ class Optimal {
             val t0 = System.currentTimeMillis()
             val deadline = t0 + timeoutMs
 
-            // 先用贪心算法获得初始解
+
             var bestGroups = Solver.greedyCover(n, k, j, s, minSGroups, pool, deadline)
-            
-            // 只对中小规模问题使用局部搜索
+
             if (n <= 15) {
-                // 使用局部搜索优化
+
                 val localGroups = Solver.localSearch(bestGroups, pool, n, j, s, minSGroups, deadline)
                 bestGroups = localGroups
                 
-                // 对于小规模问题，尝试模拟退火改进
+
                 if (n <= 9 && k <= 7) {
                     val remainingTime = deadline - System.currentTimeMillis()
-                    
-                    // 确保有足够时间运行模拟退火
+
                     if (remainingTime > 10000) {
                         try {
                             val saGroups = Solver.simulatedAnnealing(
                                 bestGroups, pool, n, j, s, k, minSGroups, deadline
                             )
                             
-                            // 只有当模拟退火找到更好解时才采用
                             if (saGroups.size < bestGroups.size) {
                                 bestGroups = saGroups
                             }
@@ -105,27 +102,23 @@ class Optimal {
             val t0 = System.currentTimeMillis()
             val deadline = t0 + timeoutMs
 
-            // 先用贪心算法获得初始解
             var bestGroups = Solver.greedyCover(n, k, j, s, minSGroups, pool, deadline)
-            
-            // 只对中小规模问题使用局部搜索
+
             if (n <= 15) {
-                // 使用局部搜索优化
+
                 val localGroups = Solver.localSearch(bestGroups, pool, n, j, s, minSGroups, deadline)
                 bestGroups = localGroups
-                
-                // 对于小规模问题，尝试模拟退火改进
+
                 if (n <= 9 && k <= 7) {
                     val remainingTime = deadline - System.currentTimeMillis()
                     
-                    // 确保有足够时间运行模拟退火
+
                     if (remainingTime > 10000) {
                         try {
                             val saGroups = Solver.simulatedAnnealing(
                                 bestGroups, pool, n, j, s, k, minSGroups, deadline
                             )
-                            
-                            // 只有当模拟退火找到更好解时才采用
+
                             if (saGroups.size < bestGroups.size) {
                                 bestGroups = saGroups
                             }
