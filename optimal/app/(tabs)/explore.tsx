@@ -119,7 +119,7 @@ const confirmDelete = async () => {
               </Text>
               
               <FlatList
-                style={{margin: 10}}
+                style={{margin: 10, maxHeight: 200}}
                 data={recordDetail.groups}
                 keyExtractor={(_, index) => index.toString()}
                 renderItem={({ item }) => (
@@ -154,8 +154,8 @@ const confirmDelete = async () => {
                 <Text variant="bodyMedium">Are you sure you want to delete this record?</Text>
               </Dialog.Content>
               <Dialog.Actions>
-                <Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>
                 <Button onPress={confirmDelete} textColor={theme.colors.error}>Delete</Button>
+                <Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>
               </Dialog.Actions>
             </Dialog>
           </Portal>
@@ -165,13 +165,12 @@ const confirmDelete = async () => {
   };
 
   return (
-    <PaperProvider>
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
           {/* 按钮容器 */}
           <View style={styles.buttonContainer}>
           </View>
-          
+
           {loading ? (
             <ActivityIndicator size="large" style={styles.loader} />
           ) : records.length === 0 ? (
@@ -192,12 +191,11 @@ const confirmDelete = async () => {
               ))}
             </Card>
           )}
-          
+
           {/* 渲染模态框 */}
           {renderRecordDetail()}
         </ScrollView>
       </SafeAreaView>
-    </PaperProvider>
   );
 }
 
