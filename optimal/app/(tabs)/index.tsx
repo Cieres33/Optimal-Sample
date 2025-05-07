@@ -11,7 +11,8 @@ import {
     useTheme,
     Portal,
     Modal,
-    Dialog
+    Dialog,
+    Icon
 } from 'react-native-paper';
 
 
@@ -46,7 +47,6 @@ export default function app(){
     const [storeLoading, setStoreLoading] = React.useState(false);
     const [dialogVisible, setDialogVisible] = useState(false);
     const [dialogMessage, setDialogMessage] = useState('');
-
     // 格式化数字：个位数前加0
     const formatNumber = (num: number): string => {
         return num >= 0 && num < 10 ? `0${num}` : `${num}`;
@@ -245,39 +245,42 @@ export default function app(){
                 </View>
                 <Button mode="contained" onPress={async () => {
                     setLoading(true);
-                    const params = {
-                        m: parseInt(m),
-                        n: parseInt(n),
-                        k: parseInt(k),
-                        j: parseInt(j),
-                        s: parseInt(s),
-                        minSGroups: parseInt(minGroup),
-                    };
-                    const error = validateParams(params);
-                    if (error) {
-                        console.error(error);
-                        setLoading(false);
-                    } else {
-                        try {
-                            if (isCustom && userInput.length > 0) {
-                                const result = await runOptimalAlgorithmCustom(params, userInput);
-                                setLoading(false);
-                                setResult(result);
-                                setShownResult(true);
-                            } else {
-                                const result = await runOptimalAlgorithm(params);
-                                setLoading(false);
-                                setResult(result);
-                                setShownResult(true);
-                            }
-                        } catch (error) {
+                    setTimeout(async () => {
+                        const params = {
+                            m: parseInt(m),
+                            n: parseInt(n),
+                            k: parseInt(k),
+                            j: parseInt(j),
+                            s: parseInt(s),
+                            minSGroups: parseInt(minGroup),
+                        };
+                        const error = validateParams(params);
+                        if (error) {
                             console.error(error);
-                        } finally {
                             setLoading(false);
+                        } else {
+                            try {
+                                if (isCustom && userInput.length > 0) {
+                                    const result = await runOptimalAlgorithmCustom(params, userInput);
+                                    setLoading(false);
+                                    setResult(result);
+                                    setShownResult(true);
+    
+                                } else {
+                                    const result = await runOptimalAlgorithm(params);
+                                    setLoading(false);
+                                    setResult(result);
+                                    setShownResult(true);
+                                }
+                            } catch (error) {
+                                console.error(error);
+                            } finally {
+                                setLoading(false);
+                            }
                         }
                     }
+                    , 1000);
                 }} style={{margin: 10}}
-                loading={loading}
                 disabled={loading}
                 >
                     Execute
@@ -317,6 +320,18 @@ export default function app(){
                                 </Button>
                             </Card.Actions>
                         </Card>
+                    </Modal>
+                </Portal>
+                <Portal>
+                    <Modal visible={loading} onDismiss={()=> setLoading(false)} contentContainerStyle={styles.resultCard}>
+                        <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+                            <Icon
+                                    source="coffee"
+                                    color={"#bf5926"}
+                                    size={25}
+                                />
+                            <Text style={[{paddingLeft:5,paddingTop:7},styles.title]}>Calculating...</Text>
+                        </View>
                     </Modal>
                 </Portal>
             </View>
