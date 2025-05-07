@@ -11,13 +11,13 @@ import {
     useTheme,
     Portal,
     Modal,
-    Banner,
+    Dialog
 } from 'react-native-paper';
+
 
 import {
     runOptimalAlgorithm,
     validateParams,
-    randomParams,
     getRunCount,
     runOptimalAlgorithmCustom,
 } from '../services/optimalService';
@@ -44,8 +44,9 @@ export default function app(){
     const [result, setResult] = React.useState<Result>();
     const [shownResult, setShownResult] = React.useState(false);
     const [storeLoading, setStoreLoading] = React.useState(false);
-    const [snackbarVisible, setSnackbarVisible] = React.useState(false);
-    const [snackbarMessage, setSnackbarMessage] = React.useState('');
+    const [dialogVisible, setDialogVisible] = useState(false);
+    const [dialogMessage, setDialogMessage] = useState('');
+
     // 格式化数字：个位数前加0
     const formatNumber = (num: number): string => {
         return num >= 0 && num < 10 ? `0${num}` : `${num}`;
@@ -105,13 +106,14 @@ export default function app(){
         setFormattedText(formattedNumbers.join(','));
     };
 
-    const showSnackbar = (message: string) => {
-        setSnackbarMessage(message);
-        setSnackbarVisible(true);
-        };
+    const showDialog = (message: string) => {
+        setDialogMessage(message);
+        setDialogVisible(true);
+    };
+    
     const handleStore = async () => {
         if (!result) {
-            showSnackbar('No result to save'); return;
+            showDialog('No result to save'); return;
             }
             try {
                 setStoreLoading(true);
@@ -123,10 +125,9 @@ export default function app(){
                     s: parseInt(s)
                     };
                     await saveToDatabase(params, result, await getRunCount(params));
-                    showSnackbar('Result saved successfully!');
+                    showDialog('Result saved successfully!');
                     } catch (e) {
-                        console.error('Failed to save result!', e);
-                        showSnackbar('Failed to save result!');
+                        showDialog('Failed to save result!');
                     } finally {
                         setStoreLoading(false);
                         }
@@ -134,19 +135,17 @@ export default function app(){
     return(
         <SafeAreaView>
             <View>
-                <Banner
-                    visible={snackbarVisible}
-                    actions={
-                        [
-                            {
-                                label: 'Close',
-                                onPress: () => setSnackbarVisible(false),
-                            },
-                        ]}
-                    style={styles.banner}
-                    icon="alert-circle">
-                    {snackbarMessage}
-                </Banner>
+                <Portal>
+                    <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+                        <Dialog.Title>Notice</Dialog.Title>
+                        <Dialog.Content>
+                            <Text variant="bodyMedium">{dialogMessage}</Text>
+                        </Dialog.Content>
+                        <Dialog.Actions>
+                            <Button onPress={() => setDialogVisible(false)}>Done</Button>
+                        </Dialog.Actions>
+                    </Dialog>
+                </Portal>
                 <SegmentedButtons style={{padding:10}}
                     value={isCustom ? 'custom' : 'random'}
                     onValueChange={value => {
@@ -293,7 +292,7 @@ export default function app(){
                             <Text style={styles.title}>
                                 Optimal Combinations ({result?.groups.length} groups)
                             </Text>
-                            <FlatList style={{margin: 10}}
+                            <FlatList style={{margin: 10,maxHeight: 200}}
                                 data={result?.groups}
                                 keyExtractor={(_item, index) => index.toString()}
                                 renderItem={({ item }) => (
@@ -346,6 +345,8 @@ const styles = StyleSheet.create({
         flex: 1,
         marginRight: 10,
         textAlign: 'center',
+        maxHeight: 100,
+        
     },
     buttonGroup:{
         flexDirection: 'row',
@@ -353,8 +354,8 @@ const styles = StyleSheet.create({
     },
     resultCard: {
         margin: 20,
-        padding: 10,
-        backgroundColor: DefaultTheme.colors.background,
+        padding: 20,
+        backgroundColor: DefaultTheme.colors.background
     },
     title: {
         fontSize: 20,
