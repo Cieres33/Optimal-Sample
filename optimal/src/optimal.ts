@@ -26,19 +26,19 @@ const label = (x: number) => {
 };
 
 export function solve(p: Params): Result {
-  const { m, n, k, j, s, minSGroups=1, seed, toLabel=false, timeoutMs=60_000 } = p;
+  const { m, n, k, j, s, minSGroups, seed, toLabel=false, timeoutMs=60_000 } = p;
   if (n > 25 || k > 7) throw Error("beyond spec");
 
   const pool = randSample(m, n, seed);
   const t0 = Date.now(), deadline = t0 + timeoutMs;
 
   // 先用贪心算法获得初始解
-  let bestGroups = greedyCover(n, k, j, s, minSGroups, pool, deadline);
+  let bestGroups = greedyCover(n, k, j, s, minSGroups ?? 1, pool, deadline);
   
   // 只对中小规模问题使用局部搜索
   if (n <= 15) {
     // 使用局部搜索优化
-    const localGroups = localSearch(bestGroups, pool, n, j, s, minSGroups, deadline);
+    const localGroups = localSearch(bestGroups, pool, n, j, s, minSGroups ?? 1, deadline);
     bestGroups = localGroups;
     
     // 对于小规模问题，尝试模拟退火改进
@@ -49,7 +49,7 @@ export function solve(p: Params): Result {
       if (remainingTime > 10000) {
         try {
           const saGroups = simulatedAnnealing(
-            bestGroups, pool, n, j, s, k, minSGroups, deadline
+            bestGroups, pool, n, j, s, k, minSGroups ?? 1, deadline
           );
           
           // 只有当模拟退火找到更好解时才采用
@@ -79,18 +79,18 @@ export function solve(p: Params): Result {
 
 
 export function solveCustom(p: Params, pool: any[]): Result {
-  const {  n, k, j, s, minSGroups=1,  toLabel=false, timeoutMs=60_000 } = p;
+  const {  n, k, j, s, minSGroups,  toLabel=false, timeoutMs=60_000 } = p;
   if (n > 25 || k > 7) throw Error("beyond spec");
 
   const t0 = Date.now(), deadline = t0 + timeoutMs;
 
   // 先用贪心算法获得初始解
-  let bestGroups = greedyCover(n, k, j, s, minSGroups, pool, deadline);
+  let bestGroups = greedyCover(n, k, j, s, minSGroups ?? 1, pool, deadline);
   
   // 只对中小规模问题使用局部搜索
   if (n <= 15) {
     // 使用局部搜索优化
-    const localGroups = localSearch(bestGroups, pool, n, j, s, minSGroups, deadline);
+    const localGroups = localSearch(bestGroups, pool, n, j, s, minSGroups ?? 1, deadline);
     bestGroups = localGroups;
     
     // 对于小规模问题，尝试模拟退火改进
@@ -101,7 +101,7 @@ export function solveCustom(p: Params, pool: any[]): Result {
       if (remainingTime > 10000) {
         try {
           const saGroups = simulatedAnnealing(
-            bestGroups, pool, n, j, s, k, minSGroups, deadline
+            bestGroups, pool, n, j, s, k, minSGroups ?? 1, deadline
           );
           
           // 只有当模拟退火找到更好解时才采用

@@ -73,7 +73,7 @@ export async function runOptimalAlgorithm(params: Params): Promise<Result> {
   if (error) throw new Error(error);
 
   const timeoutMs = 30_000; // 30 s
-  return solve({ ...params, minSGroups: 1, toLabel: true, timeoutMs });
+  return solve({ ...params, timeoutMs });
 }
 
 export async function runOptimalAlgorithmCustom(params: Params, pool:Number[] ): Promise<Result> {
@@ -81,5 +81,5 @@ export async function runOptimalAlgorithmCustom(params: Params, pool:Number[] ):
   if (error) throw new Error(error);
 
   const timeoutMs = 30_000; // 30 s
-  return solveCustom({ ...params, minSGroups: 1, toLabel: true, timeoutMs }, pool);
+  return solveCustom({ ...params, timeoutMs }, pool);
 }
