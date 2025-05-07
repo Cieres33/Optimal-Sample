@@ -3,15 +3,15 @@
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
 ## Get started
-
-1. Install dependencies
-
+1. **Requirement**
+   - [Node.js](https://nodejs.org/en/download/) >= 14.0.0
+   - [npm](https://www.npmjs.com/get-npm) >= 5.6.0
+2. **Install dependencies**
    ```bash
    npm install
    ```
-
-2. Start the app
-
+3. **Start the app**
+Web:
    ```bash
     npx expo start
    ```

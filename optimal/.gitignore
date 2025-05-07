@@ -41,3 +41,4 @@ app-example
 packge-lock.json
 node_modules
 .idea
+.vercel

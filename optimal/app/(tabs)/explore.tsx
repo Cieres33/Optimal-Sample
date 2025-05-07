@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet,  View, ScrollView, SafeAreaView, Alert,FlatList } from 'react-native';
+import { StyleSheet,  View, ScrollView, SafeAreaView ,FlatList } from 'react-native';
 import { Card, List, Divider, Button, ActivityIndicator, Text, Modal, Portal, Dialog, Provider as PaperProvider, useTheme } from 'react-native-paper';
 
 import { database } from '../db';
@@ -27,6 +27,7 @@ export default function ExploreScreen() {
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [recordDetail, setRecordDetail] = useState<DetailData | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const theme = useTheme();
@@ -56,31 +57,30 @@ export default function ExploreScreen() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedRecord) return;
-
-    try {
-      // 确认对话框
-      Alert.alert(
-        "Delete Confirmation",
-        "Are you sure you want to delete this record?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: async () => {
-              await deleteRecord(selectedRecord.id);
-              handleBack(); // 返回列表
-            }
-          }
-        ]
-      );
-    } catch (e) {
-      console.error("删除记录失败:", e);
-      Alert.alert("Error", "Failed to delete record.");
+// 显示删除确认对话框
+const handleDelete = () => {
+  if (!selectedRecord) return;
+  setDeleteDialogVisible(true);
+};
+// 确认删除操作
+const confirmDelete = async () => {
+  try {
+    if (selectedRecord) {
+      console.log("Deleting record:", selectedRecord.id);
+    } else {
+      console.error("No record selected for deletion.");
     }
-  };
+    if (selectedRecord) {
+      await deleteRecord(selectedRecord.id);
+    }
+    setDeleteDialogVisible(false);
+    handleBack(); // 返回列表
+  } catch (e) {
+    console.error("删除记录失败:", e);
+    setDeleteDialogVisible(false);
+    // 可以使用其他方式显示错误信息
+  }
+};
 
   // 返回记录列表
   const handleBack = () => {
@@ -95,7 +95,7 @@ export default function ExploreScreen() {
     
     return (
       <Portal>
-        <Modal 
+        <Modal
           visible={modalVisible}
           onDismiss={handleBack}
           dismissable={true}
@@ -131,8 +131,8 @@ export default function ExploreScreen() {
               />
             </Card.Content>
             <Card.Actions style={styles.buttonGroup}>
-              <Button 
-                mode="contained" 
+              <Button
+                mode="contained"
                 onPress={handleDelete} 
                 style={{margin: 10, flex: 1, backgroundColor: theme.colors.error}}
               >
@@ -147,6 +147,18 @@ export default function ExploreScreen() {
               </Button>
             </Card.Actions>
           </Card>
+          <Portal>
+            <Dialog visible={deleteDialogVisible} onDismiss={() => setDeleteDialogVisible(false)} dismissable={true}>
+              <Dialog.Title>Delete Confirmation</Dialog.Title>
+              <Dialog.Content>
+                <Text variant="bodyMedium">Are you sure you want to delete this record?</Text>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>
+                <Button onPress={confirmDelete} textColor={theme.colors.error}>Delete</Button>
+              </Dialog.Actions>
+            </Dialog>
+          </Portal>
         </Modal>
       </Portal>
     );

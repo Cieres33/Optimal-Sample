@@ -81,20 +81,22 @@ export async function deleteRecord(recordId: string): Promise<void> {
 
     // 获取要删除的记录
     const record = await recordsCollection.find(recordId);
-
+    console.log('要删除的记录:', record);
     // 级联删除关联结果
     const relatedResults = await resultsCollection.query(
       Q.where('record_id', recordId)
     ).fetch();
-
+    console.log('要删除的关联结果:', relatedResults);
     await database.write(async () => {
       // 使用Promise.all并行删除关联结果
+      console.log('开始删除关联结果...');
       await Promise.all(
         relatedResults.map(result => result.destroyPermanently())
       );
-      
+      console.log('关联结果删除成功');
       // 删除主记录
       await record.destroyPermanently();
+      console.log('主记录删除成功');
     });
 
     console.log('记录删除成功');
