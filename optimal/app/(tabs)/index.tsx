@@ -284,41 +284,40 @@ export default function app(){
                     Execute
                 </Button>
                 <Portal>
-                    <Modal visible={shownResult} onDismiss={()=>setShownResult(false)}>
-                            <Card style={styles.resultCard}>
-                                <Card.Title title={`计算结果（${result?.ms ?? 0} ms）`} />
-                                <Card.Content style={{maxHeight: "80%"}}>
-                                <Text style={styles.title}>样本池（{result?.samplePool.length}）</Text>
-                                <Text>{result?.samplePool.join(', ')}</Text>
-                                <Text style={styles.title}>
-                                    最优组合（{result?.groups.length} 组）
-                                </Text>
-                                <FlatList style={{margin: 10}}
-                                    data={result?.groups}
-                                    keyExtractor={(_item, index) => index.toString()}
-                                    renderItem={({ item }) => (
-                                        <List.Item
-                                            title={`组 ${item.join(', ')}`}
-                                            left={props => <List.Icon {...props} icon="format-list-bulleted" />}
-                                        />
-                                    )}
-                                />
-                                </Card.Content>
-                                <Card.Actions style={styles.buttonGroup}>
-                                    <Button mode="contained" onPress={() => {
-                                        handleStore();
-                                        setShownResult(false);
-                                    }} style={{margin: 10,flex: 1,backgroundColor:theme.colors.onPrimaryContainer}}>
-                                        Save
-                                    </Button>
-                                    <Button mode="contained" onPress={() => {
-                                        setShownResult(false);
-                                    }} style={{margin: 10,flex: 1,backgroundColor:theme.colors.secondary}}>
-                                        Clear
-                                    </Button>
-                                </Card.Actions>
-
-                            </Card>
+                <Modal visible={shownResult} onDismiss={()=>setShownResult(false)}>
+                    <Card style={styles.resultCard}>
+                        <Card.Title title={`Calculation Result (${result?.ms ?? 0} ms)`} />
+                        <Card.Content style={{maxHeight: "80%"}}>
+                            <Text style={styles.title}>Sample Pool ({result?.samplePool.length})</Text>
+                            <Text>{result?.samplePool.join(', ')}</Text>
+                            <Text style={styles.title}>
+                                Optimal Combinations ({result?.groups.length} groups)
+                            </Text>
+                            <FlatList style={{margin: 10}}
+                                data={result?.groups}
+                                keyExtractor={(_item, index) => index.toString()}
+                                renderItem={({ item }) => (
+                                    <List.Item
+                                        title={`Group ${item.join(', ')}`}
+                                        left={props => <List.Icon {...props} icon="format-list-bulleted" />}
+                                    />
+                                )}
+                            />
+                        </Card.Content>
+                            <Card.Actions style={styles.buttonGroup}>
+                                <Button mode="contained" onPress={() => {
+                                    handleStore();
+                                    setShownResult(false);
+                                }} style={{margin: 10,flex: 1,backgroundColor:theme.colors.onPrimaryContainer}}>
+                                    Save
+                                </Button>
+                                <Button mode="contained" onPress={() => {
+                                    setShownResult(false);
+                                }} style={{margin: 10,flex: 1,backgroundColor:theme.colors.secondary}}>
+                                    Clear
+                                </Button>
+                            </Card.Actions>
+                        </Card>
                     </Modal>
                 </Portal>
             </View>
